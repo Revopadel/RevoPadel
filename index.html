@@ -364,6 +364,7 @@ function ensureProducts(st){
   st.products.forEach(function(p){if(!p.club)p.club='openarena';});
   OLIMPO_PRODUCTS.forEach(function(op){if(!st.products.some(function(p){return p.id===op.id;}))st.products.push(JSON.parse(JSON.stringify(op)));});
 }
+function addonProduct(b){if(!b||!isPro(b.club))return null;return S.products.filter(function(p){return p.club===b.club&&p.cat==='Pelotas';})[0]||null;}
 function clubProducts(){return S.products.filter(function(p){return p.club===S.currentClub;});}
 function cartKeys(){return Object.keys(S.cart).filter(function(k){return clubProducts().some(function(p){return p.id===k;});});}
 var PINS={olimpo:'1111',vial:'2222',openarena:'3333'}; /* códigos de prueba del panel; en la app real cada club tendrá su usuario y contraseña */
@@ -679,12 +680,16 @@ function vPago(){
   var b=S.bookings.filter(function(x){return x.id===UI.payId;})[0];
   if(!b||!active(b)){return {html:'<p class="empty">Esta reserva ya no existe.</p>',bar:''};}
   var c=S.clubs[b.club],tot=price(b),part=tot/cap(b),me=mePlayer(b),owner=isOwner(b),split=b.payMode!=='all';
+  var ball=addonProduct(b),addonPrice=(ball&&b.addon)?ball.price:0;
   var h='<div class="stack">';
   h+='<div class="hero"><span class="eyebrow">'+esc(c.name)+' · '+esc(c.city)+'</span><div style="font-size:18px;font-weight:700">'+esc(courtName(b.club,b.court))+' · '+longDay(b.date)+' · '+hm(b.start)+'–'+hm(b.start+b.dur)+'</div><div class="sub">'+modeLabel(b)+' · '+b.dur+' min · Total '+euro(tot)+(b.open?' · Partido abierto (nivel '+lv(b.lvlMin).replace(',00','')+'–'+lv(b.lvlMax).replace(',00','')+')':'')+'</div></div>';
   if(owner&&!(me&&me.paid)){
     h+='<div class="row" role="radiogroup" aria-label="Forma de pago" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr))">';
     h+='<button role="radio" aria-checked="'+split+'" class="court'+(split?' on':'')+'" data-act="payMode" data-v="split"><span><b>Dividir entre '+cap(b)+'</b><span class="xs muted">Cada uno paga '+euro(part)+'</span></span></button>';
     h+='<button role="radio" aria-checked="'+(!split)+'" class="court'+(!split?' on':'')+'" data-act="payMode" data-v="all"><span><b>Pagar todo</b><span class="xs muted">Pagas '+euro(tot)+'</span></span></button></div>';}
+  if(ball&&me&&!me.paid){var aon=!!b.addon;
+    h+='<div class="card item" style="'+(aon?'border:2px solid var(--lime)':'')+'"><span class="av" style="border-radius:12px;color:var(--lime)">'+ic('ball',20)+'</span><div class="grow"><b>¿Añades bolas para el partido?</b><div class="small muted">'+esc(ball.name)+' · '+euro(ball.price)+'</div><div class="xs muted">Te lo dejan preparado en la recepción de '+esc(c.name)+'.</div></div><button class="btn btn-sm '+(aon?'btn-line':'btn-lime')+'" data-act="toggleAddon" data-id="'+ball.id+'" aria-pressed="'+aon+'">'+(aon?'Añadido ✓':'Añadir')+'</button></div>';}
+  if(me&&me.paid&&b.addonPaid)h+='<div class="notice">'+ic('ball')+'<span class="grow small"><b>'+esc(b.addonPaid)+'</b> pagado. Recógelo en recepción antes del partido.</span></div>';
   h+='<section class="sec"><h2>Jugadores</h2><div class="list">';
   for(var i=0;i<cap(b);i++){var p=b.players[i];
     if(!p){h+='<div class="card item"><span class="av empty" aria-hidden="true">+</span><div class="grow"><b>Hueco libre</b><div class="xs muted">'+(b.open?'Visible en Partidos abiertos':'Invita a alguien')+'</div></div><span class="tag free">Libre</span></div>';continue;}
@@ -715,7 +720,7 @@ function vPago(){
   h+='</div>';
   var bar;
   if(me&&me.paid)bar='<div class="bar g" style="flex-direction:column;align-items:stretch;gap:6px"><div class="btn btn-lime btn-lg">Pagado · ¡pista reservada!</div><span class="demo">Pago simulado: no se ha cobrado nada.</span></div>';
-  else{var base=split?part:tot,due=base+FEE;bar='<div class="bar g" style="flex-direction:column;align-items:stretch;gap:6px"><button class="btn btn-lime btn-lg" data-act="pay">'+(split?'Pagar mi parte · ':'Pagar total · ')+euro(due)+'</button><span class="small muted" style="text-align:center">'+euro(base)+' de pista + '+euro(FEE)+' de gestión</span>'+(credit()>0?'<span class="small" style="text-align:center">Se usarán '+euro(Math.min(credit(),due))+' de tu saldo ('+euro(credit())+' disponibles)</span>':'')+'<span class="demo">Pago simulado: no se cobra nada. Al pagar aceptas las condiciones de cancelación.</span></div>';}
+  else{var base=split?part:tot,due=base+FEE+addonPrice;bar='<div class="bar g" style="flex-direction:column;align-items:stretch;gap:6px"><button class="btn btn-lime btn-lg" data-act="pay">'+(split?'Pagar mi parte · ':'Pagar total · ')+euro(due)+'</button><span class="small muted" style="text-align:center">'+euro(base)+' de pista + '+euro(FEE)+' de gestión'+(addonPrice?' + '+euro(addonPrice)+' de bolas':'')+'</span>'+(credit()>0?'<span class="small" style="text-align:center">Se usarán '+euro(Math.min(credit(),due))+' de tu saldo ('+euro(credit())+' disponibles)</span>':'')+'<span class="demo">Pago simulado: no se cobra nada. Al pagar aceptas las condiciones de cancelación.</span></div>';}
   return {html:h,bar:bar};
 }
 
@@ -1063,7 +1068,7 @@ function vPanel(){
   else{h+='<section class="sec"><h2>Pedidos de la tienda</h2>';
   var ords=S.orders.filter(function(o){return o.club===cid;});
   if(!ords.length)h+='<p class="small muted" style="margin:0">Sin pedidos. Haz uno desde la vista jugador para verlo aquí.</p>';
-  ords.forEach(function(o){h+='<div class="card item"><div class="grow"><b>'+esc(S.me.name)+'</b><div class="small muted">'+o.items.map(function(x){return x.qty+'× '+esc(x.name);}).join(', ')+' · '+euro(o.total)+'</div></div>'+(o.status==='done'?'<span class="tag ok">Entregado</span>':'<button class="btn btn-lime btn-sm" data-act="deliver" data-id="'+o.id+'">Marcar entregado</button>')+'</div>';});
+  ords.forEach(function(o){h+='<div class="card item"><div class="grow"><b>'+esc(S.me.name)+'</b><div class="small muted">'+o.items.map(function(x){return x.qty+'× '+esc(x.name);}).join(', ')+' · '+euro(o.total)+(o.booking&&findB(o.booking)?' · reserva '+longDay(findB(o.booking).date)+', '+hm(findB(o.booking).start):'')+'</div></div>'+(o.status==='done'?'<span class="tag ok">Entregado</span>':'<button class="btn btn-lime btn-sm" data-act="deliver" data-id="'+o.id+'">Marcar entregado</button>')+'</div>';});
   h+='</section>';}
   h+='<section class="sec"><h2>Torneos</h2><div class="list">';
   S.tournaments.filter(function(t){return t.club===cid;}).forEach(function(t){h+='<div class="card item"><div class="grow"><b>'+esc(t.name)+'</b><div class="small muted">'+longDay(t.date)+' · '+esc(t.catLabel)+'</div></div><b class="num">'+t.entries+'/'+t.max+'</b></div>';});
@@ -1151,8 +1156,11 @@ var A={
   payMode:function(d){var b=findB(UI.payId);if(b)b.payMode=d.v;},
   pay:function(){var b=findB(UI.payId);if(!b)return;var me=mePlayer(b);if(!me)return;me.paid=true;
     if(b.payMode==='all'){me.amt=price(b);b.players.forEach(function(p){if(!p.me){p.paid=true;p.amt=0;}});}else me.amt=perPlayer(b.club,b.court,b.start);
-    me.fee=FEE;var used=Math.min(credit(),me.amt+FEE);if(used>0)S.me.credit=Math.round((credit()-used)*100)/100;
-    b.status='ok';toast('Pago hecho. ¡Pista reservada!'+(used>0?' Has usado '+euro(used)+' de saldo.':''));},
+    var ball=addonProduct(b),extra=(ball&&b.addon)?ball.price:0;
+    me.fee=FEE;var used=Math.min(credit(),me.amt+FEE+extra);if(used>0)S.me.credit=Math.round((credit()-used)*100)/100;
+    if(extra){S.orders.unshift({id:uid(),club:b.club,items:[{name:ball.name,qty:1,price:ball.price}],total:ball.price,status:'pend',booking:b.id});b.addonPaid=ball.name;b.addon=null;}
+    b.status='ok';toast('Pago hecho. ¡Pista reservada!'+(extra?' Tus bolas te esperan en recepción.':'')+(used>0?' Has usado '+euro(used)+' de saldo.':''));},
+  toggleAddon:function(d){var b=findB(UI.payId);if(b)b.addon=b.addon?null:d.id;},
   simPay:function(d){var b=findB(UI.payId);var p=b&&b.players[+d.v];if(p){p.paid=true;p.amt=perPlayer(b.club,b.court,b.start);toast(p.name+' ha pagado su parte');}},
   simDeadline:function(){var b=findB(UI.payId);if(!b)return;var mine=0;
     if(b.players.length<cap(b)){checkDeadlines(b.id);mine=(S.refunds&&S.refunds[0]&&S.refunds[0].at>Date.now()-2000)?S.refunds[0].amount:0;
