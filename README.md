@@ -1,6 +1,6 @@
-# PorTres
+# Revo Pádel
 
-Demo instalable de PorTres, la app de pádel para jugadores y clubs: reservas, partidos abiertos con chat, pago dividido, torneos, tienda, nivel, ranking e insignias.
+Demo instalable de Revo Pádel, la app de pádel para jugadores y clubs: reservas, partidos abiertos con chat, pago dividido, torneos, tienda, nivel, ranking e insignias.
 
 Ábrela en el móvil y pulsa **Instalar aplicación** (Android) o **Compartir → Añadir a pantalla de inicio** (iPhone).
 

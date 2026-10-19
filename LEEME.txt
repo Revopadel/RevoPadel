@@ -1,7 +1,7 @@
-PorTres · app instalable (versión demo)
+Revo Pádel · app instalable (versión demo)
 ========================================
 
-Esta carpeta es la demo de PorTres preparada para instalarse en el móvil
+Esta carpeta es la demo de Revo Pádel preparada para instalarse en el móvil
 como una app: icono en la pantalla de inicio, pantalla completa y
 funcionamiento sin conexión.
 

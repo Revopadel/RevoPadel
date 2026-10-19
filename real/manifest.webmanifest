@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "PorTres Real · Olimpo",
-  "short_name": "PorTres Real",
-  "description": "Versión conectada de PorTres: reservas reales en el Olimpo.",
+  "name": "Revo Pádel · Olimpo (real)",
+  "short_name": "Revo Real",
+  "description": "Versión conectada de Revo Pádel: reservas reales en el Olimpo.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

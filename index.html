@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080C12">
-<meta name="description" content="PorTres: reserva pista, únete a partidos y sube de nivel en tu club de pádel.">
+<meta name="description" content="Revo Pádel: reserva pista, únete a partidos y sube de nivel en tu club de pádel.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="PorTres">
+<meta name="apple-mobile-web-app-title" content="Revo">
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{font:14px/1.4 system-ui,sans-serif;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 img{max-width:100%}
 </style>
-<title>PorTres</title>
+<title>Revo Pádel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Barlow:wght@400;500;600;700&display=swap">
 <style>
@@ -281,7 +281,7 @@ var IC={
  store:'<path d="M3 9l2-5h14l2 5"></path><path d="M4 9v11h16V9"></path><path d="M9 20v-6h6v6"></path>'
 };
 function logo(sz){sz=sz||26;return '<svg aria-hidden="true" width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#D4F04A"></circle><path d="M4.5 5.5c3.5 3 3.5 10 0 13M19.5 5.5c-3.5 3-3.5 10 0 13" fill="none" stroke="#0A0F05" stroke-width="1.8" stroke-linecap="round"></path></svg>';}
-function wordmark(sz){return '<span class="brand">'+logo(sz)+'<span class="wm" style="'+(sz?'font-size:'+Math.round(sz*0.95)+'px':'')+'">POR<b>TRES</b></span></span>';}
+function wordmark(sz){return '<span class="brand">'+logo(sz)+'<span class="wm" style="'+(sz?'font-size:'+Math.round(sz*0.95)+'px':'')+'">RE<b>VO</b></span></span>';}
 function courtSvg(single){var y1=single?24:8,y2=single?76:92,ym=50;
   return '<svg aria-hidden="true" viewBox="0 0 200 100"><rect x="0" y="0" width="200" height="100" fill="#0B1B3D"></rect><rect x="8" y="'+y1+'" width="184" height="'+(y2-y1)+'" fill="var(--turf)" stroke="#fff" stroke-width="2.5"></rect><path d="M38 '+y1+'V'+y2+'M162 '+y1+'V'+y2+'M38 '+ym+'H162" stroke="#fff" stroke-width="2.5" fill="none"></path><path d="M100 '+(y1-5)+'V'+(y2+5)+'" stroke="#D4F04A" stroke-width="4"></path></svg>';}
 function medal(b,on,big){return '<span class="medal'+(on?'':' off')+(big?' big':'')+'" style="--mc:'+b.c+'">'+ic(b.g==='win'?'trophy':'medal',big?46:26)+'</span>';}
