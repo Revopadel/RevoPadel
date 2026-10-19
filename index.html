@@ -366,6 +366,7 @@ function ensureProducts(st){
   OLIMPO_PRODUCTS.forEach(function(op){if(!st.products.some(function(p){return p.id===op.id;}))st.products.push(JSON.parse(JSON.stringify(op)));});
 }
 function addonProduct(b){if(!b||!isPro(b.club))return null;return S.products.filter(function(p){return p.club===b.club&&p.cat==='Pelotas';})[0]||null;}
+function waterProduct(b){if(!b||!isPro(b.club))return null;return S.products.filter(function(p){return p.club===b.club&&p.cat==='Bebidas';})[0]||null;}
 function clubProducts(){return S.products.filter(function(p){return p.club===S.currentClub;});}
 function cartKeys(){return Object.keys(S.cart).filter(function(k){return clubProducts().some(function(p){return p.id===k;});});}
 var PINS={olimpo:'1111',vial:'2222',openarena:'3333'}; /* códigos de prueba del panel; en la app real cada club tendrá su usuario y contraseña */
@@ -692,7 +693,7 @@ function vPago(){
   var b=S.bookings.filter(function(x){return x.id===UI.payId;})[0];
   if(!b||!active(b)){return {html:'<p class="empty">Esta reserva ya no existe.</p>',bar:''};}
   var c=S.clubs[b.club],tot=price(b),part=tot/cap(b),me=mePlayer(b),owner=isOwner(b),split=b.payMode!=='all';
-  var ball=addonProduct(b),addonPrice=(ball&&b.addon)?ball.price:0;
+  var ball=addonProduct(b),water=waterProduct(b),wq=water?(b.water||0):0,addonPrice=((ball&&b.addon)?ball.price:0)+(water?wq*water.price:0);
   var h='<div class="stack">';
   h+='<div class="hero"><span class="eyebrow">'+esc(c.name)+' · '+esc(c.city)+'</span><div style="font-size:18px;font-weight:700">'+esc(courtName(b.club,b.court))+' · '+longDay(b.date)+' · '+hm(b.start)+'–'+hm(b.start+b.dur)+'</div><div class="sub">'+modeLabel(b)+' · '+b.dur+' min · Total '+euro(tot)+(b.open?' · Partido abierto (nivel '+lv(b.lvlMin).replace(',00','')+'–'+lv(b.lvlMax).replace(',00','')+')':'')+'</div></div>';
   if(owner&&!(me&&me.paid)){
@@ -701,7 +702,9 @@ function vPago(){
     h+='<button role="radio" aria-checked="'+(!split)+'" class="court'+(!split?' on':'')+'" data-act="payMode" data-v="all"><span><b>Pagar todo</b><span class="xs muted">Pagas '+euro(tot)+'</span></span></button></div>';}
   if(ball&&me&&!me.paid){var aon=!!b.addon;
     h+='<div class="card item" style="'+(aon?'border:2px solid var(--lime)':'')+'"><span class="av" style="border-radius:12px;color:var(--lime)">'+ic('ball',20)+'</span><div class="grow"><b>¿Añades bolas para el partido?</b><div class="small muted">'+esc(ball.name)+' · '+euro(ball.price)+'</div><div class="xs muted">Te lo dejan preparado en la recepción de '+esc(c.name)+'.</div></div><button class="btn btn-sm '+(aon?'btn-line':'btn-lime')+'" data-act="toggleAddon" data-id="'+ball.id+'" aria-pressed="'+aon+'">'+(aon?'Añadido ✓':'Añadir')+'</button></div>';}
-  if(me&&me.paid&&b.addonPaid)h+='<div class="notice">'+ic('ball')+'<span class="grow small"><b>'+esc(b.addonPaid)+'</b> pagado. Recógelo en recepción antes del partido.</span></div>';
+  if(water&&me&&!me.paid){
+    h+='<div class="card item" style="'+(wq?'border:2px solid var(--lime)':'')+'"><span class="av" style="border-radius:12px;color:var(--lime)">'+ic('bottle',20)+'</span><div class="grow"><b>¿Agua para el partido?</b><div class="small muted">'+esc(water.name)+' · '+euro(water.price)+' cada una</div>'+(wq?'<div class="xs muted">'+wq+(wq===1?' botella':' botellas')+' · '+euro(wq*water.price)+'</div>':'')+'</div><div class="row" style="flex-wrap:nowrap"><button class="iconbtn" aria-label="Una botella menos" data-act="waterQty" data-v="-1"'+(wq?'':' disabled')+'>'+ic('minus',16)+'</button><b class="num" style="min-width:22px;text-align:center;font-size:18px" aria-live="polite">'+wq+'</b><button class="iconbtn" aria-label="Una botella más" data-act="waterQty" data-v="1"'+(wq>=12?' disabled':'')+'>'+ic('plus',16)+'</button></div></div>';}
+  if(me&&me.paid&&b.addonPaid)h+='<div class="notice">'+ic('bag')+'<span class="grow small">Extras pagados: <b>'+esc(b.addonPaid)+'</b>. Recógelos en recepción antes del partido.</span></div>';
   h+='<section class="sec"><h2>Jugadores</h2><div class="list">';
   for(var i=0;i<cap(b);i++){var p=b.players[i];
     if(!p){h+='<div class="card item"><span class="av empty" aria-hidden="true">+</span><div class="grow"><b>Hueco libre</b><div class="xs muted">'+(b.open?'Visible en Partidos abiertos':'Invita a alguien')+'</div></div><span class="tag free">Libre</span></div>';continue;}
@@ -732,7 +735,7 @@ function vPago(){
   h+='</div>';
   var bar;
   if(me&&me.paid)bar='<div class="bar g" style="flex-direction:column;align-items:stretch;gap:6px"><div class="btn btn-lime btn-lg">Pagado · ¡pista reservada!</div><span class="demo">Pago simulado: no se ha cobrado nada.</span></div>';
-  else{var base=split?part:tot,due=base+FEE+addonPrice;bar='<div class="bar g" style="flex-direction:column;align-items:stretch;gap:6px"><button class="btn btn-lime btn-lg" data-act="pay">'+(split?'Pagar mi parte · ':'Pagar total · ')+euro(due)+'</button><span class="small muted" style="text-align:center">'+euro(base)+' de pista + '+euro(FEE)+' de gestión'+(addonPrice?' + '+euro(addonPrice)+' de bolas':'')+'</span>'+(credit()>0?'<span class="small" style="text-align:center">Se usarán '+euro(Math.min(credit(),due))+' de tu saldo ('+euro(credit())+' disponibles)</span>':'')+'<span class="demo">Pago simulado: no se cobra nada. Al pagar aceptas las condiciones de cancelación.</span></div>';}
+  else{var base=split?part:tot,due=base+FEE+addonPrice;bar='<div class="bar g" style="flex-direction:column;align-items:stretch;gap:6px"><button class="btn btn-lime btn-lg" data-act="pay">'+(split?'Pagar mi parte · ':'Pagar total · ')+euro(due)+'</button><span class="small muted" style="text-align:center">'+euro(base)+' de pista + '+euro(FEE)+' de gestión'+(addonPrice?' + '+euro(addonPrice)+' de extras':'')+'</span>'+(credit()>0?'<span class="small" style="text-align:center">Se usarán '+euro(Math.min(credit(),due))+' de tu saldo ('+euro(credit())+' disponibles)</span>':'')+'<span class="demo">Pago simulado: no se cobra nada. Al pagar aceptas las condiciones de cancelación.</span></div>';}
   return {html:h,bar:bar};
 }
 
@@ -1169,10 +1172,15 @@ var A={
   payMode:function(d){var b=findB(UI.payId);if(b)b.payMode=d.v;},
   pay:function(){var b=findB(UI.payId);if(!b)return;var me=mePlayer(b);if(!me)return;me.paid=true;
     if(b.payMode==='all'){me.amt=price(b);b.players.forEach(function(p){if(!p.me){p.paid=true;p.amt=0;}});}else me.amt=perPlayer(b.club,b.court,b.start);
-    var ball=addonProduct(b),extra=(ball&&b.addon)?ball.price:0;
+    var ball=addonProduct(b),water=waterProduct(b),items=[];
+    if(ball&&b.addon)items.push({name:ball.name,qty:1,price:ball.price});
+    if(water&&b.water>0)items.push({name:water.name,qty:b.water,price:water.price});
+    var extra=items.reduce(function(a,x){return a+x.qty*x.price;},0);
     me.fee=FEE;var used=Math.min(credit(),me.amt+FEE+extra);if(used>0)S.me.credit=Math.round((credit()-used)*100)/100;
-    if(extra){S.orders.unshift({id:uid(),club:b.club,items:[{name:ball.name,qty:1,price:ball.price}],total:ball.price,status:'pend',booking:b.id});b.addonPaid=ball.name;b.addon=null;}
-    b.status='ok';toast('Pago hecho. ¡Pista reservada!'+(extra?' Tus bolas te esperan en recepción.':'')+(used>0?' Has usado '+euro(used)+' de saldo.':''));},
+    if(extra){S.orders.unshift({id:uid(),club:b.club,items:items,total:extra,status:'pend',booking:b.id});
+      b.addonPaid=items.map(function(x){return x.qty>1?x.qty+' '+(x.name==='Botella de agua'?'botellas de agua':'× '+x.name.toLowerCase()):(x.name==='Botella de agua'?'1 botella de agua':x.name);}).join(' y ');b.addon=null;b.water=0;}
+    b.status='ok';toast('Pago hecho. ¡Pista reservada!'+(extra?' Tus extras te esperan en recepción.':'')+(used>0?' Has usado '+euro(used)+' de saldo.':''));},
+  waterQty:function(d){var b=findB(UI.payId);if(b)b.water=Math.max(0,Math.min(12,(b.water||0)+(+d.v)));},
   toggleAddon:function(d){var b=findB(UI.payId);if(b)b.addon=b.addon?null:d.id;},
   simPay:function(d){var b=findB(UI.payId);var p=b&&b.players[+d.v];if(p){p.paid=true;p.amt=perPlayer(b.club,b.court,b.start);toast(p.name+' ha pagado su parte');}},
   simDeadline:function(){var b=findB(UI.payId);if(!b)return;var mine=0;
