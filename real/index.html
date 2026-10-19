@@ -7,6 +7,11 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="../icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PorTres Real">
 <title>PorTres · versión conectada</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
@@ -393,6 +398,7 @@ async function start(){
 sb.auth.onAuthStateChange(function(ev,session){var u=session&&session.user;setTimeout(function(){setUser(u);},0);});
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.user&&S.club)refresh();});
 start();
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(function(){});});}
 </script>
 </body>
 </html>
