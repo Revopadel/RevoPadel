@@ -382,7 +382,7 @@ function migrate(s){
     s.bookings=s.bookings.concat(genBookings('olimpo',{courts:OLIMPO_COURTS.slice(2)}));
     s.olimpo5=true;
   }
-  if(!s.clubs.openarena){
+  if(!s.clubs.openarena&&!s.onlyOlimpo){
     s.clubs.openarena=JSON.parse(JSON.stringify(CLUB_OA));
     s.bookings=s.bookings.concat(genBookings('openarena',s.clubs.openarena));
     s.rank.openarena=JSON.parse(JSON.stringify(RANK_OA));
@@ -393,7 +393,19 @@ function migrate(s){
 function load(){try{var t=localStorage.getItem(KEY);if(t){var s=JSON.parse(t);if(s&&s.v===1)return s;}}catch(e){}return null;}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 
-var S=load();var fresh=!S;if(!S){S=seed();ensureProducts(S);Object.keys(S.clubs).forEach(function(k){S.clubs[k].plan=PLANS[k]||'club';});}else{migrate(S);save();}
+/* Piloto: solo Olimpo. El resto de clubs se quita de los datos de la demo */
+var ONLY='olimpo';
+function onlyOlimpo(st){
+  Object.keys(st.clubs).forEach(function(k){if(k!==ONLY)delete st.clubs[k];});
+  var keep=function(x){return x.club===ONLY;};
+  st.bookings=st.bookings.filter(keep);st.tournaments=st.tournaments.filter(keep);st.products=st.products.filter(keep);
+  st.orders=(st.orders||[]).filter(keep);st.waitlist=(st.waitlist||[]).filter(keep);
+  st.results.forEach(function(r){r.club=ONLY;});
+  Object.keys(st.rank).forEach(function(k){if(k!==ONLY)delete st.rank[k];});
+  st.me.clubs=[ONLY];var rb=st.me.rankBase||{};st.me.rankBase={};st.me.rankBase[ONLY]=rb[ONLY]||0;
+  st.currentClub=ONLY;st.onlyOlimpo=true;
+}
+var S=load();var fresh=!S;if(!S){S=seed();ensureProducts(S);Object.keys(S.clubs).forEach(function(k){S.clubs[k].plan=PLANS[k]||'club';});onlyOlimpo(S);}else{migrate(S);onlyOlimpo(S);save();}
 var UI={regName:'',regLevel:3.5,regPos:'Drive',regClub:'olimpo',regDemo:true,ctab:'act',pq:'',follOnly:false,prev:[],mode:'player',tab:'reservar',sub:null,date:dayKey(0),court:null,slot:null,makeOpen:false,payId:null,
   mclub:'todos',lvlOnly:true,tcat:'todos',cat:'Todo',q:'',ptab:'res',rankClub:null,confirm:null,panelClub:null,panelDay:dayKey(0),panelSel:null};
 if(!S.me.registered)UI.regName=S.me.name||'';
@@ -583,7 +595,6 @@ var BADGES=[
   {id:'madrugador',name:'Madrugador',rule:'5 reservas antes de las 10:00',need:5,k:'early',c:'#BFD3FF'},
   {id:'competidor',name:'Competidor',rule:'Apuntarte a un torneo',need:1,k:'tourn',c:'#BFD3FF'},
   {id:'racha',name:'En racha',rule:'3 victorias seguidas',need:3,k:'best',c:'#FFD8A8'},
-  {id:'viajero',name:'Viajero',rule:'Jugar en 2 clubs',need:2,k:'clubs',c:'#FFD8A8'},
   {id:'social',name:'Social',rule:'Jugar con 10 personas distintas',need:10,k:'partners',c:'#D4F04A'},
   {id:'rey',name:'Rey de la pista',rule:'Top 3 del ranking mensual',need:1,k:'top3',c:'#FFD8A8'},
   {id:'w1',g:'win',name:'Pasa bolas',rule:'Tu primera victoria',need:1,k:'wins',c:'#D4F04A'},
@@ -728,7 +739,7 @@ function vPartidos(){
   var lvl=S.me.level,h='<div class="stack">';
   h+='<button class="btn btn-ink btn-lg btn-block" data-act="createOpen">'+ic('plus',18)+'Crear partido abierto</button>';
   h+='<div class="row">';
-  [['todos','Todos']].concat(Object.keys(S.clubs).map(function(k){return [k,S.clubs[k].name];})).forEach(function(x){h+='<button class="chip'+(UI.mclub===x[0]?' on':'')+'" aria-pressed="'+(UI.mclub===x[0])+'" data-act="mclub" data-v="'+x[0]+'">'+x[1]+'</button>';});
+  (Object.keys(S.clubs).length>1?[['todos','Todos']].concat(Object.keys(S.clubs).map(function(k){return [k,S.clubs[k].name];})):[]).forEach(function(x){h+='<button class="chip'+(UI.mclub===x[0]?' on':'')+'" aria-pressed="'+(UI.mclub===x[0])+'" data-act="mclub" data-v="'+x[0]+'">'+x[1]+'</button>';});
   h+='<button class="chip lime'+(UI.lvlOnly?' on':'')+'" aria-pressed="'+UI.lvlOnly+'" data-act="lvlOnly">Mi nivel ('+lv(round05(lvl-0.5))+'–'+lv(round05(lvl+0.5))+')</button><button class="chip'+(UI.follOnly?' on':'')+'" aria-pressed="'+UI.follOnly+'" data-act="follOnly">Siguiendo</button></div>';
   var list=S.bookings.filter(function(b){return active(b)&&b.open&&future(b)&&(b.players.length<cap(b)||isMine(b));})
     .filter(function(b){return UI.mclub==='todos'||b.club===UI.mclub;})
@@ -878,7 +889,7 @@ function vResultado(){
   return {html:h,bar:''};
 }
 function vRanking(){
-  var c=UI.rankClub||S.currentClub,rows=ranking(c),h='<div class="stack"><div role="tablist" class="row">';
+  var c=UI.rankClub||S.currentClub,rows=ranking(c),multi=Object.keys(S.clubs).length>1,h='<div class="stack"><div role="tablist" class="row"'+(multi?'':' hidden')+'>';
   Object.keys(S.clubs).forEach(function(k){h+='<button role="tab" aria-selected="'+(c===k)+'" class="chip'+(c===k?' on':'')+'" data-act="rankClub" data-v="'+k+'">'+esc(S.clubs[k].name)+'</button>';});
   h+='</div><div class="podium">';
   var H={1:104,2:80,3:64},F={1:'#D4F04A',2:'#BFD3FF',3:'#FFD8A8'};
@@ -893,7 +904,8 @@ function vClubs(){
   var h='<div class="stack"><div class="list">';
   Object.keys(S.clubs).forEach(function(k){var c=S.clubs[k],on=k===S.currentClub;
     h+='<button class="court'+(on?' on':'')+'" aria-pressed="'+on+'" data-act="pickClub" data-v="'+k+'"><span class="item"><span class="av" style="width:48px;height:48px;border-radius:14px;color:var(--lime);background:var(--hero)">'+esc(c.short)+'</span><span><b>'+esc(c.name)+'</b><span class="small muted">'+esc(c.city)+' · '+c.courts.length+' pistas · '+hm(c.open)+'–'+hm(c.close)+'<br>'+priceNote(c)+(isPro(k)?' · con tienda':'')+'</span></span></span><span class="small" style="color:var(--accent);font-weight:700">'+(on?'Actual':'Elegir')+'</span></button>';});
-  h+='</div><p class="small muted" style="margin:0">Tu perfil, resultados e insignias son los mismos en todos los clubs. Pistas, horarios y precios son datos de ejemplo.</p></div>';
+  h+='<div class="card item" style="border-style:dashed;opacity:.85"><span class="av" style="width:48px;height:48px;border-radius:14px">'+ic('plus',20)+'</span><div class="grow"><b>Más clubes próximamente</b><div class="small muted">Pronto podrás reservar en otros clubs de la zona con tu mismo perfil, nivel e insignias.</div></div></div>';
+  h+='</div></div>';
   return {html:h,bar:''};
 }
 function vAvisos(){
@@ -944,7 +956,7 @@ function vWelcome(){
   h+='</div><span class="xs muted">Se ajusta solo con tus resultados.</span></div>';
   h+='<div class="field"><span style="font-size:13px;font-weight:700">Posición</span><div class="row">';
   ['Drive','Revés','Me da igual'].forEach(function(x){h+='<button type="button" class="chip'+(UI.regPos===x?' on':'')+'" aria-pressed="'+(UI.regPos===x)+'" data-act="regPos" data-v="'+x+'">'+x+'</button>';});
-  h+='</div></div><div class="field"><span style="font-size:13px;font-weight:700">Tu club habitual</span><div class="row">';
+  h+='</div></div><div class="field"'+(Object.keys(S.clubs).length>1?'':' hidden')+'><span style="font-size:13px;font-weight:700">Tu club habitual</span><div class="row">';
   Object.keys(S.clubs).forEach(function(k){h+='<button type="button" class="chip'+(UI.regClub===k?' on':'')+'" aria-pressed="'+(UI.regClub===k)+'" data-act="regClub" data-v="'+k+'">'+esc(S.clubs[k].name)+'</button>';});
   h+='</div></div><label class="chk" for="rdemo"><input type="checkbox" id="rdemo"'+(UI.regDemo?' checked':'')+'><span>Cargar un historial de ejemplo (partidos, insignias y seguidores) para ver la app en marcha</span></label>';
   h+='<p id="regerr" class="small" style="margin:0;color:var(--bad)" hidden></p><button class="btn btn-ink btn-lg btn-block" type="submit">Crear mi perfil</button></form>';
@@ -1018,7 +1030,7 @@ function vClubLogin(){
   Object.keys(S.clubs).forEach(function(k){h+='<button type="button" class="chip'+(sel===k?' on':'')+'" aria-pressed="'+(sel===k)+'" data-act="loginClub" data-v="'+k+'">'+esc(S.clubs[k].name)+'</button>';});
   h+='</div></div><div class="field"><label for="pin">Código de administrador</label><input class="input" id="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="8"></div>';
   h+='<p id="pinerr" class="small" style="margin:0;color:var(--bad)" hidden></p><button class="btn btn-ink btn-lg btn-block" type="submit">Entrar al panel</button>';
-  h+='<p class="demo" style="margin:0">Demo: Olimpo 1111 · C.D. El Vial 2222 · OPEN Arena 3333</p></form>';
+  h+='<p class="demo" style="margin:0">Código de prueba: Olimpo 1111</p></form>';
   return {html:h,bar:''};
 }
 
@@ -1201,7 +1213,7 @@ var A={
     if(!checkBadges())toast('Resultado confirmado. Nivel '+lv(S.me.level));},
   rankClub:function(d){UI.rankClub=d.v;},
   pickClub:function(d){S.currentClub=d.v;UI.court=null;UI.slot=null;UI.sub=null;toast('Ahora estás en '+S.clubs[d.v].name);},
-  reset:function(){try{localStorage.removeItem(KEY);}catch(e){}S=seed();ensureProducts(S);Object.keys(S.clubs).forEach(function(k){S.clubs[k].plan=PLANS[k]||'club';});UI.regName='';UI.prev=[];checkBadges(true);UI.confirm=null;UI.tab='reservar';UI.sub=null;UI.date=dayKey(0);UI.court=null;UI.slot=null;toast('Demo reiniciada');},
+  reset:function(){try{localStorage.removeItem(KEY);}catch(e){}S=seed();ensureProducts(S);Object.keys(S.clubs).forEach(function(k){S.clubs[k].plan=PLANS[k]||'club';});onlyOlimpo(S);UI.regName='';UI.prev=[];checkBadges(true);UI.confirm=null;UI.tab='reservar';UI.sub=null;UI.date=dayKey(0);UI.court=null;UI.slot=null;toast('Demo reiniciada');},
   panelClub:function(d){UI.panelClub=d.v;UI.panelSel=null;UI.panelNew=null;UI.confirm=null;},
   panelDay:function(d){UI.panelDay=d.v;UI.panelSel=null;UI.panelNew=null;UI.confirm=null;},
   panelSel:function(d){UI.panelSel=UI.panelSel===d.id?null:d.id;UI.panelNew=null;UI.confirm=null;},
