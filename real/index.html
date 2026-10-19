@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080C12">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<title>PorTres · versión conectada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Versión conectada a Supabase. Mismo aspecto "Pista nocturna" que la demo. */
+:root{
+  --bg:#080C12;--surface:#111823;--surface2:#1A2331;--ink:#EEF2F7;--muted:#97A3B6;--line:#243042;
+  --accent:#5B8CFF;--lime:#D4F04A;--lime-ink:#0A0F05;--hero:#0D1A30;--bad:#FF7A7A;--ok:#4ADE80;--warn:#FCD34D;
+  --font-d:'Barlow Condensed','Arial Narrow',sans-serif;--font-b:'Barlow','Segoe UI',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:15px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+#app{max-width:480px;margin:0 auto;min-height:100%;padding:0 16px calc(84px + env(safe-area-inset-bottom,0px))}
+.top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top,0px)) 0 10px}
+.logo{font-family:var(--font-d);font-weight:800;font-size:26px;letter-spacing:.5px;text-transform:uppercase}
+.logo b{color:var(--lime)}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:#14223D;color:var(--accent)}
+.tag.lime{background:#22300A;color:var(--lime)}
+.tag.warn{background:#332708;color:var(--warn)}
+h1,h2,h3{font-family:var(--font-d);font-weight:800;text-transform:uppercase;letter-spacing:.3px;margin:0}
+h1{font-size:30px;line-height:1}
+h2{font-size:22px}
+h3{font-size:18px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0}
+.row{display:flex;gap:8px;align-items:center}
+.between{justify-content:space-between}
+.wrap{flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:10px}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:700;background:var(--lime);color:var(--lime-ink)}
+.btn:disabled{opacity:.5}
+.btn-line{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn-blue{background:var(--accent);color:#06101F}
+.btn-danger{background:#3A1214;color:var(--bad);border:1px solid #5A2226}
+.btn-block{width:100%}
+.btn-sm{padding:8px 12px;font-size:13px;border-radius:10px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;color:var(--muted);font-weight:600}
+.input{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:12px;width:100%}
+.input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.seg{display:flex;background:var(--surface2);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;padding:10px;border-radius:9px;font-weight:700;color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--ink)}
+.days{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+.days::-webkit-scrollbar{display:none}
+.day{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 12px;text-align:center;min-width:62px}
+.day b{display:block;font-family:var(--font-d);font-size:20px}
+.day span{font-size:12px;color:var(--muted);text-transform:capitalize}
+.day.on{background:var(--lime);color:var(--lime-ink);border-color:var(--lime)}
+.day.on span{color:var(--lime-ink)}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.slot{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:8px 4px;text-align:center;font-weight:700}
+.slot small{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+.slot.free{border-color:#55631F;color:var(--lime)}
+.slot.open{border-color:#2E4A8C;color:var(--accent)}
+.slot.taken,.slot.past{opacity:.45}
+.slot.mine{border-color:var(--ok);color:var(--ok)}
+.list{display:flex;flex-direction:column;gap:6px}
+.pl{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--surface2);border-radius:10px}
+.pl.empty{color:var(--muted);border:1px dashed var(--line);background:transparent}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:#0B1119;border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center}
+.tabs div{display:flex;max-width:480px;width:100%}
+.tabs button{flex:1;border:0;background:transparent;color:var(--muted);padding:8px 2px;font-size:12px;font-weight:700;border-radius:10px}
+.tabs button.on{color:var(--lime)}
+.tabs svg{display:block;margin:0 auto 2px;width:22px;height:22px}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--surface);border-top-left-radius:20px;border-top-right-radius:20px;width:100%;max-width:480px;max-height:88vh;overflow:auto;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));border:1px solid var(--line)}
+.chat{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow:auto;padding:4px 0}
+.msg{background:var(--surface2);border-radius:12px;padding:8px 10px;max-width:85%}
+.msg.me{align-self:flex-end;background:#1C2B4F}
+.msg b{font-size:12px;color:var(--accent);display:block}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;z-index:30;max-width:90%;text-align:center}
+.toast.bad{background:var(--bad);color:#2A0606}
+.center{text-align:center}
+.hero{background:var(--hero);border-radius:20px;padding:22px 18px;margin:8px 0 14px;border:1px solid #1A2B4A}
+.empty-state{text-align:center;padding:28px 12px;color:var(--muted)}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--lime);border-radius:50%;animation:sp .8s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app"><div class="empty-state"><span class="spin"></span></div></div>
+<div id="sheet"></div>
+<nav class="tabs" id="tabs" hidden><div id="tabsIn"></div></nav>
+<script src="supabase.js"></script>
+<script>
+/* ===== Conexión ===== */
+var SB_URL='https://ediueyqmkrboxvmisjmr.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkaXVleXFta3Jib3h2bWlzam1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MTM1NzAsImV4cCI6MjEwNzk4OTU3MH0.5tLy3iUSY2U9lKO5n9PlOdWG6ExdBKlIIzOrvjf-w4g';
+var CLUB='olimpo';
+var sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+/* ===== Estado ===== */
+var S={user:null,me:null,club:null,courts:[],admin:false,tab:'reservar',day:null,panelDay:null,
+  occ:[],open:[],mine:[],panel:[],authMode:'login',loading:true,sheet:null,match:null,msgs:[],busy:false};
+var poll=null;
+
+/* ===== Fechas en hora de España ===== */
+var TZ='Europe/Madrid';
+function nowM(){var p={};new Intl.DateTimeFormat('en-GB',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).forEach(function(x){p[x.type]=x.value;});return {day:p.year+'-'+p.month+'-'+p.day,min:(+p.hour)*60+(+p.minute)};}
+function addDays(d,n){var x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);}
+function isPast(d,m){var n=nowM();return d<n.day||(d===n.day&&m<=n.min);}
+function hm(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+function dfmt(d,o){return new Intl.DateTimeFormat('es-ES',Object.assign({timeZone:'UTC'},o)).format(new Date(d+'T12:00:00Z'));}
+function dayLong(d){var n=nowM().day;if(d===n)return 'Hoy';if(d===addDays(n,1))return 'Mañana';return dfmt(d,{weekday:'long',day:'numeric',month:'long'});}
+function slotList(){var c=S.club,o=[];for(var m=c.open_min;m+c.slot_min<=c.close_min;m+=c.slot_min)o.push(m);return o;}
+function ppl(m){return Number(m<S.club.cut_min?S.club.price_morning:S.club.price_afternoon);}
+function euro(x){return Number(x).toFixed(2).replace('.',',')+' €';}
+function court(id){for(var i=0;i<S.courts.length;i++)if(S.courts[i].id===id)return S.courts[i];return {name:'Pista',size:4};}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function lvl(x){return x==null?'':Number(x).toFixed(1).replace('.',',');}
+function pname(p){return p.profiles?p.profiles.name:(p.guest_name||'Jugador');}
+
+/* ===== Avisos ===== */
+var tt=null;
+function toast(msg,bad){var el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);}el.className='toast'+(bad?' bad':'');el.textContent=msg;el.hidden=false;clearTimeout(tt);tt=setTimeout(function(){el.hidden=true;},3200);}
+function errMsg(e){var m=(e&&(e.message||e.error_description))||'Algo ha fallado';
+  if(/Invalid login credentials/i.test(m))return 'Correo o contraseña incorrectos';
+  if(/Email not confirmed/i.test(m))return 'Confirma tu correo antes de entrar (mira tu bandeja de entrada)';
+  if(/already registered|already been registered/i.test(m))return 'Ya hay una cuenta con ese correo: entra con ella';
+  if(/Password should be at least/i.test(m))return 'La contraseña debe tener al menos 6 caracteres';
+  if(/rate limit|too many/i.test(m))return 'Demasiados intentos. Espera un poco y vuelve a probar';
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m))return 'Sin conexión. Revisa tu internet';
+  return m;}
+
+/* ===== Carga de datos ===== */
+async function q(p){var r=await p;if(r.error)throw r.error;return r.data;}
+async function loadBase(){
+  var res=await Promise.all([
+    q(sb.from('clubs').select('*').eq('id',CLUB).single()),
+    q(sb.from('courts').select('*').eq('club_id',CLUB).eq('active',true).order('sort')),
+    q(sb.from('profiles').select('*').eq('id',S.user.id).single()),
+    q(sb.from('club_admins').select('club_id').eq('user_id',S.user.id))
+  ]);
+  S.club=res[0];S.courts=res[1];S.me=res[2];S.admin=res[3].some(function(a){return a.club_id===CLUB;});
+  var n=nowM().day;if(!S.day)S.day=n;if(!S.panelDay)S.panelDay=n;
+}
+var SEL='id,court_id,day,start_min,kind,label,is_open,lvl_min,lvl_max,owner_id,status,booking_players(user_id,guest_name,profiles(name,level))';
+async function loadTab(){
+  var n=nowM().day;
+  if(S.tab==='reservar'){S.occ=await q(sb.rpc('occupied_slots',{p_club:CLUB,p_from:S.day,p_to:S.day}));
+    S.mineIds=await myIds(S.day,S.day);}
+  else if(S.tab==='partidos'){var rows=await q(sb.from('bookings').select(SEL).eq('club_id',CLUB).eq('status','active').eq('is_open',true).gte('day',n).order('day').order('start_min'));
+    S.open=rows.filter(function(b){return !isPast(b.day,b.start_min);});}
+  else if(S.tab==='mias'){var rows2=await q(sb.from('bookings').select(SEL).eq('status','active').gte('day',n).order('day').order('start_min'));
+    S.mine=rows2.filter(function(b){return !isPast(b.day,b.start_min)&&b.booking_players.some(function(p){return p.user_id===S.user.id;});});}
+  else if(S.tab==='club'&&S.admin){S.panel=await q(sb.from('bookings').select(SEL).eq('club_id',CLUB).eq('status','active').eq('day',S.panelDay));}
+}
+async function myIds(from,to){var r=await q(sb.from('booking_players').select('booking_id,bookings!inner(day,status)').eq('user_id',S.user.id).gte('bookings.day',from).lte('bookings.day',to).eq('bookings.status','active'));
+  return r.map(function(x){return x.booking_id;});}
+async function refresh(){try{await loadTab();}catch(e){toast(errMsg(e),true);}render();}
+
+/* ===== Pintar ===== */
+var ICON={
+  reservar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+  partidos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.5c3 0 6 2 6 5.5"/></svg>',
+  mias:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg>',
+  perfil:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>',
+  club:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>'
+};
+var TABNAME={reservar:'Reservar',partidos:'Partidos',mias:'Mis reservas',perfil:'Perfil',club:'Club'};
+function header(){return '<div class="top"><div class="logo">Por<b>Tres</b></div><span class="tag warn">Versión de prueba</span></div>';}
+
+function render(){
+  var app=document.getElementById('app'),tabs=document.getElementById('tabs');
+  if(S.loading){app.innerHTML='<div class="empty-state" style="padding-top:40vh"><span class="spin"></span></div>';tabs.hidden=true;return;}
+  if(!S.user){app.innerHTML=vAuth();tabs.hidden=true;renderSheet();return;}
+  if(!S.club){app.innerHTML=header()+'<div class="card"><b>No se ha podido cargar el club.</b><p class="muted small">Revisa tu conexión.</p><button class="btn btn-block" data-act="retry">Reintentar</button></div>';tabs.hidden=true;return;}
+  var keys=['reservar','partidos','mias','perfil'];if(S.admin)keys.splice(3,0,'club');
+  document.getElementById('tabsIn').innerHTML=keys.map(function(k){return '<button data-act="tab" data-v="'+k+'" class="'+(S.tab===k?'on':'')+'">'+ICON[k]+TABNAME[k]+'</button>';}).join('');
+  tabs.hidden=false;
+  var v={reservar:vReservar,partidos:vPartidos,mias:vMias,perfil:vPerfil,club:vClub}[S.tab]||vReservar;
+  app.innerHTML=header()+v();
+  renderSheet();
+}
+
+function vAuth(){
+  var reg=S.authMode==='register';
+  return header()+
+  '<div class="hero"><h1>Reserva pista<br>en el <span style="color:var(--lime)">Olimpo</span></h1><p class="muted" style="margin:10px 0 0">Esta es la versión conectada: las reservas son reales y las ve todo el mundo.</p></div>'+
+  '<div class="seg"><button data-act="authMode" data-v="login" class="'+(reg?'':'on')+'">Entrar</button><button data-act="authMode" data-v="register" class="'+(reg?'on':'')+'">Crear cuenta</button></div>'+
+  '<form class="col" style="margin-top:14px" data-form="auth">'+
+  (reg?'<div class="field"><label for="f-name">Nombre</label><input class="input" id="f-name" name="name" maxlength="40" autocomplete="name" required></div>':'')+
+  '<div class="field"><label for="f-email">Correo</label><input class="input" id="f-email" name="email" type="email" autocomplete="email" required></div>'+
+  '<div class="field"><label for="f-pass">Contraseña</label><input class="input" id="f-pass" name="password" type="password" minlength="6" autocomplete="'+(reg?'new-password':'current-password')+'" required></div>'+
+  '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un momento…':(reg?'Crear cuenta':'Entrar'))+'</button>'+
+  '</form>';
+}
+
+function dayChips(sel,act){var n=nowM().day,h='<div class="days">';
+  for(var i=0;i<14;i++){var d=addDays(n,i);h+='<button class="day'+(d===sel?' on':'')+'" data-act="'+act+'" data-v="'+d+'"><span>'+(i===0?'Hoy':dfmt(d,{weekday:'short'}).replace('.',''))+'</span><b>'+dfmt(d,{day:'numeric'})+'</b></button>';}
+  return h+'</div>';}
+
+function vReservar(){
+  var c=S.club,h='<h2 style="margin-top:4px">'+esc(c.name)+' · '+esc(c.city)+'</h2><p class="muted small" style="margin:4px 0 8px">Mañana '+euro(c.price_morning)+' · tarde '+euro(c.price_afternoon)+' por jugador (tarde desde las '+hm(c.cut_min)+'). Reservas de 1 h 30.</p>';
+  h+=dayChips(S.day,'day');
+  h+='<p style="margin:2px 0 0;font-weight:700;text-transform:capitalize">'+esc(dayLong(S.day))+'</p>';
+  var occ={};S.occ.forEach(function(o){occ[o.court_id+'|'+o.start_min]=o;});
+  S.courts.forEach(function(ct){
+    h+='<div class="card"><div class="row between"><div><h3>'+esc(ct.name)+'</h3><span class="muted small">'+esc(ct.description||'')+'</span></div></div><div class="slots">';
+    slotList().forEach(function(m){var o=occ[ct.id+'|'+m],past=isPast(S.day,m);
+      if(o){var mine=(S.mineIds||[]).indexOf(o.booking_id)>=0;
+        if(mine)h+='<button class="slot mine" data-act="match" data-v="'+o.booking_id+'">'+hm(m)+'<small>Tuya</small></button>';
+        else if(o.is_open&&o.players<o.size&&!past)h+='<button class="slot open" data-act="match" data-v="'+o.booking_id+'">'+hm(m)+'<small>Abierto '+o.players+'/'+o.size+'</small></button>';
+        else h+='<div class="slot taken">'+hm(m)+'<small>Ocupada</small></div>';}
+      else if(past)h+='<div class="slot past">'+hm(m)+'<small>Pasada</small></div>';
+      else h+='<button class="slot free" data-act="book" data-court="'+ct.id+'" data-v="'+m+'">'+hm(m)+'<small>Libre</small></button>';});
+    h+='</div></div>';});
+  return h;}
+
+function matchCard(b){var ct=court(b.court_id),n=b.booking_players.length,me=b.booking_players.some(function(p){return p.user_id===S.user.id;});
+  var owner=b.booking_players.filter(function(p){return p.user_id===b.owner_id;})[0];
+  return '<button class="card" style="width:100%;text-align:left;color:inherit" data-act="match" data-v="'+b.id+'">'+
+    '<div class="row between"><b style="text-transform:capitalize">'+esc(dayLong(b.day))+' · '+hm(b.start_min)+'</b>'+
+    (b.is_open?'<span class="tag">'+n+'/'+ct.size+' jugadores</span>':'<span class="tag lime">Privada</span>')+'</div>'+
+    '<div class="muted small" style="margin-top:4px">'+esc(ct.name)+(b.lvl_min!=null?' · nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):'')+(owner?' · organiza '+esc(pname(owner)):'')+'</div>'+
+    (me?'<div class="small" style="margin-top:6px;color:var(--ok);font-weight:700">'+(b.owner_id===S.user.id?'Organizas tú':'Estás apuntado')+'</div>':'')+
+    '</button>';}
+
+function vPartidos(){var h='<h2 style="margin-top:4px">Partidos abiertos</h2><p class="muted small" style="margin:4px 0 0">Partidos del Olimpo a los que les falta gente. Apúntate y habla con el resto en el chat.</p>';
+  var list=S.open.filter(function(b){return b.booking_players.length<court(b.court_id).size||b.booking_players.some(function(p){return p.user_id===S.user.id;});});
+  if(!list.length)return h+'<div class="empty-state">No hay partidos abiertos ahora mismo.<br><br><button class="btn" data-act="tab" data-v="reservar">Reserva y abre uno</button></div>';
+  return h+list.map(matchCard).join('');}
+
+function vMias(){var h='<h2 style="margin-top:4px">Mis reservas</h2>';
+  if(!S.mine.length)return h+'<div class="empty-state">No tienes reservas próximas.<br><br><button class="btn" data-act="tab" data-v="reservar">Reservar pista</button></div>';
+  return h+S.mine.map(matchCard).join('');}
+
+function vPerfil(){var me=S.me,opts='';for(var x=10;x<=70;x+=5){var v=(x/10).toFixed(1);opts+='<option value="'+v+'"'+(Number(me.level).toFixed(1)===v?' selected':'')+'>'+v.replace('.',',')+'</option>';}
+  return '<h2 style="margin-top:4px">Tu perfil</h2>'+
+  '<form class="card col" data-form="profile"><div class="field"><label for="p-name">Nombre</label><input class="input" id="p-name" name="name" maxlength="40" value="'+esc(me.name)+'" required></div>'+
+  '<div class="field"><label for="p-level">Nivel</label><select class="input" id="p-level" name="level">'+opts+'</select></div>'+
+  '<button class="btn" type="submit">Guardar</button></form>'+
+  '<div class="card"><div class="muted small">Has entrado como</div><b>'+esc(S.user.email)+'</b>'+(S.admin?'<div style="margin-top:6px"><span class="tag lime">Administrador del Olimpo</span></div>':'')+'</div>'+
+  '<button class="btn btn-line btn-block" data-act="logout">Cerrar sesión</button>'+
+  '<p class="muted small center" style="margin-top:18px">Versión de prueba conectada. Las reservas no se pagan en la app: se paga en el club como siempre.</p>';}
+
+function vClub(){var h='<h2 style="margin-top:4px">Panel del club</h2><p class="muted small" style="margin:4px 0 8px">Todas las reservas del día. Apunta las que te llegan por teléfono o bloquea pistas.</p>'+dayChips(S.panelDay,'panelDay');
+  var by={};S.panel.forEach(function(b){by[b.court_id+'|'+b.start_min]=b;});
+  var total=S.panel.length,cap=S.courts.length*slotList().length;
+  h+='<div class="card row between"><span><b style="font-family:var(--font-d);font-size:26px">'+total+'</b> <span class="muted">de '+cap+' horas ocupadas</span></span><span class="tag">'+esc(dayLong(S.panelDay))+'</span></div>';
+  S.courts.forEach(function(ct){h+='<div class="card"><h3>'+esc(ct.name)+'</h3><div class="list" style="margin-top:8px">';
+    slotList().forEach(function(m){var b=by[ct.id+'|'+m],past=isPast(S.panelDay,m),t='<b>'+hm(m)+'</b> ';
+      if(b){var who;if(b.kind==='blocked')who='Bloqueada'+(b.label?': '+esc(b.label):'');
+        else if(b.kind==='manual')who='Teléfono: '+esc(b.label||(b.booking_players[0]&&b.booking_players[0].guest_name)||'');
+        else{var ow=b.booking_players.filter(function(p){return p.user_id===b.owner_id;})[0];who=esc(ow?pname(ow):'App')+' · '+b.booking_players.length+'/'+ct.size+(b.is_open?' · abierto':'');}
+        h+='<div class="pl"><span>'+t+who+'</span>'+(past?'':'<button class="btn btn-danger btn-sm" data-act="askCancel" data-v="'+b.id+'">Cancelar</button>')+'</div>';}
+      else if(past)h+='<div class="pl empty"><span>'+t+'Libre</span></div>';
+      else h+='<div class="pl empty"><span>'+t+'Libre</span><span class="row"><button class="btn btn-line btn-sm" data-act="admin" data-k="manual" data-court="'+ct.id+'" data-v="'+m+'">Teléfono</button><button class="btn btn-line btn-sm" data-act="admin" data-k="blocked" data-court="'+ct.id+'" data-v="'+m+'">Bloquear</button></span></div>';});
+    h+='</div></div>';});
+  return h;}
+
+/* ===== Hojas (ventanas inferiores) ===== */
+function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){el.innerHTML='';return;}
+  var h='';
+  if(s.type==='book'){var ct=court(s.court),p=ppl(s.start),opts=function(sel){var o='';for(var x=10;x<=70;x+=5){var v=(x/10).toFixed(1);o+='<option value="'+v+'"'+(Number(sel).toFixed(1)===v?' selected':'')+'>'+v.replace('.',',')+'</option>';}return o;};
+    var L=Number(S.me.level),mn=Math.max(1,L-0.5),mx=Math.min(7,L+0.5);
+    h='<h2>Reservar</h2><p class="muted" style="margin:6px 0 12px;text-transform:capitalize">'+esc(ct.name)+' · '+esc(dayLong(S.day))+' · '+hm(s.start)+'–'+hm(s.start+S.club.slot_min)+'</p>'+
+    '<div class="card"><div class="row between"><span>Por jugador</span><b>'+euro(p)+'</b></div><div class="row between muted small" style="margin-top:4px"><span>Pista completa ('+ct.size+' jugadores)</span><span>'+euro(p*ct.size)+'</span></div><p class="small muted" style="margin:8px 0 0">Se paga en el club, como siempre.</p></div>'+
+    '<form class="col" data-form="book"><label class="row card" style="margin:0"><input type="checkbox" name="open" id="b-open" '+(s.open?'checked':'')+' data-act="toggleOpen" style="width:20px;height:20px"> <span><b>Partido abierto</b><br><span class="muted small">Que se apunte gente del club para completar la pista</span></span></label>'+
+    (s.open?'<div class="row"><div class="field" style="flex:1"><label for="b-min">Nivel mínimo</label><select class="input" id="b-min" name="lmin">'+opts(mn)+'</select></div><div class="field" style="flex:1"><label for="b-max">Nivel máximo</label><select class="input" id="b-max" name="lmax">'+opts(mx)+'</select></div></div>':'')+
+    '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Reservando…':'Confirmar reserva')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
+  else if(s.type==='match'){h=vMatch();}
+  else if(s.type==='admin'){var c2=court(s.court);
+    h='<h2>'+(s.kind==='manual'?'Reserva por teléfono':'Bloquear pista')+'</h2><p class="muted" style="margin:6px 0 12px;text-transform:capitalize">'+esc(c2.name)+' · '+esc(dayLong(S.panelDay))+' · '+hm(s.start)+'</p>'+
+    '<form class="col" data-form="admin"><div class="field"><label for="a-label">'+(s.kind==='manual'?'Nombre de quien reserva':'Motivo')+'</label><input class="input" id="a-label" name="label" maxlength="40" placeholder="'+(s.kind==='manual'?'Ej.: Paco':'Ej.: Mantenimiento')+'"></div>'+
+    '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(s.kind==='manual'?'Apuntar reserva':'Bloquear')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
+  else if(s.type==='cancel'){h='<h2>¿Cancelar la reserva?</h2><p class="muted">La hora quedará libre para todos.</p><div class="col"><button class="btn btn-danger btn-block" data-act="doCancel" data-v="'+s.id+'"'+(S.busy?' disabled':'')+'>Sí, cancelar</button><button class="btn btn-line btn-block" data-act="'+(s.back?'match':'close')+'" data-v="'+(s.back||'')+'">No</button></div>';}
+  el.innerHTML='<div class="sheet-bg" data-act="bg"><div class="sheet" role="dialog" aria-modal="true">'+h+'</div></div>';
+  var chat=document.getElementById('chatBox');if(chat)chat.scrollTop=chat.scrollHeight;}
+
+function vMatch(){var b=S.match;if(!b)return '<div class="center"><span class="spin"></span></div>';
+  var ct=court(b.court_id),ps=b.booking_players,me=ps.some(function(p){return p.user_id===S.user.id;}),owner=b.owner_id===S.user.id,past=isPast(b.day,b.start_min),full=ps.length>=ct.size;
+  var h='<div class="row between"><h2>'+(b.is_open?'Partido abierto':'Tu reserva')+'</h2><button class="btn btn-line btn-sm" data-act="close">Cerrar</button></div>'+
+    '<p class="muted" style="margin:6px 0 10px;text-transform:capitalize">'+esc(ct.name)+' · '+esc(dayLong(b.day))+' · '+hm(b.start_min)+'–'+hm(b.start_min+S.club.slot_min)+(b.lvl_min!=null?' · nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):'')+'</p>';
+  h+='<div class="list">';ps.forEach(function(p){h+='<div class="pl"><span>'+esc(pname(p))+(p.user_id===b.owner_id?' <span class="tag lime">Organiza</span>':'')+'</span><span class="muted small">'+(p.profiles?'Nivel '+lvl(p.profiles.level):'')+'</span></div>';});
+  for(var i=ps.length;i<ct.size;i++)h+='<div class="pl empty">Hueco libre</div>';h+='</div>';
+  h+='<div class="col" style="margin-top:12px">';
+  if(!past){
+    if(!me&&b.is_open&&!full)h+='<button class="btn btn-block" data-act="join" data-v="'+b.id+'"'+(S.busy?' disabled':'')+'>Apuntarme · '+euro(ppl(b.start_min))+'</button>';
+    if(!me&&full)h+='<p class="muted center">El partido está completo.</p>';
+    if(me&&!owner)h+='<button class="btn btn-line btn-block" data-act="leave" data-v="'+b.id+'"'+(S.busy?' disabled':'')+'>Salirme del partido</button>';
+    if(owner||S.admin)h+='<button class="btn btn-danger btn-block" data-act="askCancel" data-v="'+b.id+'" data-back="'+b.id+'">Cancelar reserva</button>';
+    if(b.is_open&&!full)h+='<button class="btn btn-blue btn-block" data-act="share" data-v="'+b.id+'">Compartir por WhatsApp</button>';}
+  h+='</div>';
+  if(me||S.admin){h+='<h3 style="margin-top:16px">Chat del partido</h3><div class="chat" id="chatBox">';
+    if(!S.msgs.length)h+='<p class="muted small">Aún no hay mensajes. ¡Saluda!</p>';
+    S.msgs.forEach(function(m){var mine=m.user_id===S.user.id;h+='<div class="msg'+(mine?' me':'')+'">'+(mine?'':'<b>'+esc(m.profiles?m.profiles.name:'Jugador')+'</b>')+esc(m.body)+'</div>';});
+    h+='</div>'+(me?'<form class="row" data-form="chat" style="margin-top:8px"><input class="input" name="body" maxlength="500" placeholder="Escribe un mensaje" autocomplete="off" aria-label="Mensaje"><button class="btn" type="submit">Enviar</button></form>':'');}
+  return h;}
+
+/* ===== Acciones ===== */
+async function openMatch(id){stopPoll();S.sheet={type:'match',id:id};S.match=null;S.msgs=[];renderSheet();
+  try{await loadMatch(id);}catch(e){S.sheet=null;toast(errMsg(e),true);render();return;}
+  if(!S.match){S.sheet=null;toast('Ese partido ya no está disponible',true);render();return;}
+  renderSheet();poll=setInterval(function(){if(S.sheet&&S.sheet.type==='match'&&S.sheet.id===id)loadMatch(id).then(keepChat).catch(function(){});else stopPoll();},6000);}
+function keepChat(){var inp=document.querySelector('[data-form="chat"] input'),val=inp?inp.value:'',foc=inp&&document.activeElement===inp;renderSheet();var n=document.querySelector('[data-form="chat"] input');if(n){n.value=val;if(foc)n.focus();}}
+function stopPoll(){if(poll){clearInterval(poll);poll=null;}}
+async function loadMatch(id){var r=await q(sb.from('bookings').select(SEL).eq('id',id).eq('status','active').maybeSingle());S.match=r;
+  if(r&&(r.booking_players.some(function(p){return p.user_id===S.user.id;})||S.admin))S.msgs=await q(sb.from('match_messages').select('id,body,created_at,user_id,profiles(name)').eq('booking_id',id).order('created_at').limit(200));else S.msgs=[];}
+async function rpc(name,args,okMsg){S.busy=true;renderSheet();render();
+  try{var r=await sb.rpc(name,args);if(r.error)throw r.error;if(okMsg)toast(okMsg);return {ok:true,data:r.data};}
+  catch(e){toast(errMsg(e),true);return {ok:false};}
+  finally{S.busy=false;}}
+
+var A={
+  retry:function(){curUid=undefined;start();},
+  authMode:function(el){S.authMode=el.dataset.v;render();},
+  tab:function(el){S.tab=el.dataset.v;S.sheet=null;stopPoll();render();refresh();window.scrollTo(0,0);},
+  day:function(el){S.day=el.dataset.v;render();refresh();},
+  panelDay:function(el){S.panelDay=el.dataset.v;render();refresh();},
+  book:function(el){S.sheet={type:'book',court:el.dataset.court,start:+el.dataset.v,open:false};renderSheet();},
+  toggleOpen:function(el){S.sheet.open=el.checked;renderSheet();},
+  match:function(el){if(el.dataset.v)openMatch(el.dataset.v);else{S.sheet=null;renderSheet();}},
+  close:function(){S.sheet=null;stopPoll();renderSheet();},
+  bg:function(el,ev){if(ev.target===el){S.sheet=null;stopPoll();renderSheet();}},
+  join:async function(el){var r=await rpc('join_match',{p_booking:el.dataset.v},'¡Te has apuntado!');if(r.ok)await loadMatch(el.dataset.v);renderSheet();refresh();},
+  leave:async function(el){var r=await rpc('leave_match',{p_booking:el.dataset.v},'Te has salido del partido');if(r.ok){S.sheet=null;stopPoll();}renderSheet();refresh();},
+  askCancel:function(el){stopPoll();S.sheet={type:'cancel',id:el.dataset.v,back:el.dataset.back||''};renderSheet();},
+  doCancel:async function(el){var r=await rpc('cancel_booking',{p_booking:el.dataset.v},'Reserva cancelada');if(r.ok)S.sheet=null;renderSheet();refresh();},
+  admin:function(el){S.sheet={type:'admin',kind:el.dataset.k,court:el.dataset.court,start:+el.dataset.v};renderSheet();var i=document.getElementById('a-label');if(i)i.focus();},
+  share:function(el){var b=S.match,ct=court(b.court_id),faltan=ct.size-b.booking_players.length;
+    var link=location.origin+location.pathname+'#p='+el.dataset.v;
+    var msg='¿Te apuntas? Partido en el Olimpo, '+dayLong(b.day).toLowerCase()+' a las '+hm(b.start_min)+' en la '+ct.name+(b.lvl_min!=null?' (nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max)+')':'')+'. Falta'+(faltan>1?'n ':' ')+faltan+'. Apúntate aquí: '+link;
+    window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');},
+  logout:async function(){await sb.auth.signOut();}
+};
+var FORMS={
+  auth:async function(f){var d=new FormData(f),email=String(d.get('email')||'').trim(),pw=String(d.get('password')||'');
+    S.busy=true;render();
+    try{if(S.authMode==='register'){var name=String(d.get('name')||'').trim();
+        var r=await sb.auth.signUp({email:email,password:pw,options:{data:{name:name},emailRedirectTo:location.origin+location.pathname}});
+        if(r.error)throw r.error;
+        if(!r.data.session){S.authMode='login';toast('Te hemos enviado un correo para confirmar tu cuenta');}
+      }else{var r2=await sb.auth.signInWithPassword({email:email,password:pw});if(r2.error)throw r2.error;}
+    }catch(e){toast(errMsg(e),true);}
+    S.busy=false;render();},
+  book:async function(f){var s=S.sheet,d=new FormData(f),open=!!d.get('open'),mn=open?Number(d.get('lmin')):null,mx=open?Number(d.get('lmax')):null;
+    if(open&&mn>mx){var t=mn;mn=mx;mx=t;}
+    var r=await rpc('book_slot',{p_court:s.court,p_day:S.day,p_start:s.start,p_open:open,p_lvl_min:mn,p_lvl_max:mx},open?'¡Pista reservada! Tu partido ya es visible':'¡Pista reservada!');
+    if(r.ok){S.sheet=null;await refresh();if(open)openMatch(r.data);}else{renderSheet();refresh();}},
+  admin:async function(f){var s=S.sheet,d=new FormData(f);
+    var r=await rpc('admin_block_slot',{p_court:s.court,p_day:S.panelDay,p_start:s.start,p_kind:s.kind,p_label:String(d.get('label')||'').trim()||null},s.kind==='manual'?'Reserva apuntada':'Pista bloqueada');
+    if(r.ok)S.sheet=null;renderSheet();refresh();},
+  chat:async function(f){var inp=f.querySelector('input'),body=inp.value.trim();if(!body)return;inp.value='';
+    var r=await sb.from('match_messages').insert({booking_id:S.match.id,user_id:S.user.id,body:body});
+    if(r.error){toast(errMsg(r.error),true);inp.value=body;return;}
+    await loadMatch(S.match.id);keepChat();},
+  profile:async function(f){var d=new FormData(f),name=String(d.get('name')||'').trim(),level=Number(d.get('level'));
+    if(!name){toast('Pon tu nombre',true);return;}
+    var r=await sb.from('profiles').update({name:name,level:level}).eq('id',S.user.id).select().single();
+    if(r.error){toast(errMsg(r.error),true);return;}S.me=r.data;toast('Perfil guardado');render();}
+};
+document.addEventListener('click',function(ev){
+  var sb_=ev.target.closest('button[type="submit"]');
+  if(sb_){var form=sb_.closest('form[data-form]');if(form){ev.preventDefault();if(!form.reportValidity())return;if(!S.busy)FORMS[form.dataset.form](form);return;}}
+  var el=ev.target.closest('[data-act]');if(!el)return;var fn=A[el.dataset.act];if(!fn)return;
+  if(el.dataset.act==='bg'&&ev.target!==el)return;
+  if(el.tagName!=='INPUT')ev.preventDefault();
+  fn(el,ev);});
+document.addEventListener('submit',function(ev){var form=ev.target.closest('form[data-form]');if(!form)return;ev.preventDefault();if(!S.busy)FORMS[form.dataset.form](form);});
+
+/* ===== Arranque ===== */
+var curUid;
+async function setUser(u){var uid=(u&&u.id)||null;
+  if(uid===curUid){if(u)S.user=u;return;}
+  curUid=uid;S.user=u||null;
+  S.club=null;S.sheet=null;stopPoll();
+  if(!S.user){S.loading=false;render();return;}
+  S.loading=true;render();
+  try{await loadBase();await loadTab();}catch(e){if(curUid===uid)toast(errMsg(e),true);}
+  if(curUid!==uid)return;
+  S.loading=false;render();
+  var m=/^#p=([0-9a-f-]{36})$/.exec(location.hash);if(m){history.replaceState(null,'',location.pathname);openMatch(m[1]);}}
+async function start(){
+  try{var r=await sb.auth.getSession();await setUser(r.data.session&&r.data.session.user);}
+  catch(e){S.loading=false;toast(errMsg(e),true);render();}}
+sb.auth.onAuthStateChange(function(ev,session){var u=session&&session.user;setTimeout(function(){setUser(u);},0);});
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.user&&S.club)refresh();});
+start();
+</script>
+</body>
+</html>
