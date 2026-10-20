@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Revo Real">
 <title>Revo Pádel · versión conectada</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Barlow:wght@400;500;600;700&display=swap">
 <style>
 /* Versión conectada a Supabase. Mismo aspecto "Pista nocturna" que la demo. */
 :root{
@@ -31,8 +31,7 @@ button,input,select{font-family:inherit;font-size:inherit;color:inherit}
 button{cursor:pointer}
 #app{max-width:480px;margin:0 auto;min-height:100%;padding:0 16px calc(84px + env(safe-area-inset-bottom,0px))}
 .top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top,0px)) 0 10px}
-.logo{font-family:var(--font-d);font-weight:800;font-size:26px;letter-spacing:.5px;text-transform:uppercase}
-.logo b{color:var(--lime)}
+.logo{display:block;color:var(--ink)}
 .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:#14223D;color:var(--accent)}
 .tag.lime{background:#22300A;color:var(--lime)}
 .tag.warn{background:#332708;color:var(--warn)}
@@ -185,7 +184,7 @@ var ICON={
   club:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>'
 };
 var TABNAME={reservar:'Reservar',partidos:'Partidos',mias:'Mis reservas',perfil:'Perfil',club:'Club'};
-function header(){return '<div class="top"><div class="logo">Re<b>vo</b></div><span class="tag warn">Versión de prueba</span></div>';}
+function header(){return '<div class="top"><svg class="logo" role="img" aria-label="Revo" width="94" height="40" viewBox="0 0 400 170"><text x="0" y="142" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-style="italic" font-weight="800" font-size="164" fill="currentColor" textLength="236" lengthAdjust="spacingAndGlyphs">REV</text><circle cx="320" cy="85" r="66" fill="#D4F04A"></circle><path d="M278 35C302 62 302 108 278 135M362 35C338 62 338 108 362 135" fill="none" stroke="#0A0F05" stroke-width="9" stroke-linecap="round"></path></svg><span class="tag warn">Versión de prueba</span></div>';}
 
 function render(){
   var app=document.getElementById('app'),tabs=document.getElementById('tabs');
