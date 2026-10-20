@@ -1,34 +1,9 @@
-Revo Pádel · app instalable (versión demo)
-========================================
+Revo Pádel · cómo está organizada esta carpeta
 
-Esta carpeta es la demo de Revo Pádel preparada para instalarse en el móvil
-como una app: icono en la pantalla de inicio, pantalla completa y
-funcionamiento sin conexión.
+  index.html  → la web pública de Revo (portada)
+  real/       → la app de verdad, conectada a Supabase
+  demo/       → la demo completa para enseñar a clubes
+  web/        → capturas y tráiler que usa la web
 
-1. PUBLICARLA GRATIS (5 minutos)
-   Opción A · Netlify Drop (la más fácil)
-     - Entra en https://app.netlify.com/drop
-     - Arrastra ESTA CARPETA entera (portres-app) a la página.
-     - Te da un enlace del tipo https://nombre-al-azar.netlify.app
-       (crea una cuenta gratuita para que no caduque y para cambiarle el nombre).
-   Opción B · GitHub Pages
-     - Crea un repositorio, sube estos archivos y activa Pages en Settings.
-
-2. INSTALARLA EN EL MÓVIL
-   Android (Chrome): abre el enlace > menú de los tres puntos >
-     "Instalar aplicación" o "Añadir a pantalla de inicio".
-   iPhone (Safari): abre el enlace > botón Compartir >
-     "Añadir a pantalla de inicio".
-
-3. PASARLA A TUS AMIGOS O A LOS CLUBS
-   Mándales el mismo enlace; cada uno la instala en su móvil.
-   Los enlaces de "Compartir partido" apuntan a donde la hayas publicado.
-
-4. MÁS ADELANTE: GOOGLE PLAY
-   Con la app ya publicada en internet, https://www.pwabuilder.com genera
-   a partir del enlace el paquete para subirla a Google Play (necesitas la
-   cuenta de desarrollador de Google, 25 $ una sola vez).
-
-Importante: es la DEMO. Cada móvil guarda sus propios datos y los pagos
-son simulados. La versión real necesitará servidor, pagos reales y textos
-legales antes de usarla con clientes.
+Los clubes que rellenan el formulario de la web quedan guardados en Supabase,
+en la tabla club_leads.

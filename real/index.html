@@ -91,6 +91,12 @@ h3{font-size:18px}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;z-index:30;max-width:90%;text-align:center}
 .toast.bad{background:var(--bad);color:#2A0606}
 .center{text-align:center}
+.inst{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));width:min(448px,calc(100% - 32px));background:var(--lima);color:var(--lime-ink);border-radius:16px;padding:14px 14px 14px 16px;display:flex;gap:12px;align-items:center;z-index:15;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.inst.solo{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.inst p{margin:0;font-size:14px;line-height:1.35;flex:1}
+.inst b{display:block;font-size:15px}
+.inst .btn{background:var(--lime-ink);color:var(--lima);padding:10px 14px;font-size:14px}
+.inst .x{background:none;border:0;width:36px;height:36px;color:var(--lime-ink);font-size:22px;line-height:1}
 .clubbtn{display:flex;align-items:baseline;gap:10px;background:none;border:0;padding:0;margin-top:4px;text-align:left}
 .clubchg{font-size:13px;font-weight:700;color:var(--accent)}
 .clubcard{display:flex;align-items:center;gap:12px;margin:0;width:100%;color:inherit}
@@ -106,6 +112,7 @@ h3{font-size:18px}
 <body>
 <div id="app"><div class="empty-state"><span class="spin"></span></div></div>
 <div id="sheet"></div>
+<div id="inst"></div>
 <nav class="tabs" id="tabs" hidden><div id="tabsIn"></div></nav>
 <script src="supabase.js"></script>
 <script>
@@ -407,6 +414,24 @@ async function start(){
   catch(e){S.loading=false;toast(errMsg(e),true);render();}}
 sb.auth.onAuthStateChange(function(ev,session){var u=session&&session.user;setTimeout(function(){setUser(u);},0);});
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.user&&S.club)refresh();});
+/* Aviso para instalar la app (Android: botón; iPhone: pasos de Safari) */
+var deferredInstall=null,instHidden=false;
+try{instHidden=localStorage.getItem('revo-inst-off')==='1';}catch(e){}
+function standalone(){return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;}
+function isIOS(){return /iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
+function renderInst(){var el=document.getElementById('inst');var asked=/[?&]instalar=1/.test(location.search);
+  if(standalone()||(instHidden&&!asked)||(!deferredInstall&&!isIOS()&&!asked)){el.innerHTML='';return;}
+  var solo=document.getElementById('tabs').hidden;
+  var body=deferredInstall?'<p><b>Instala Revo en tu móvil</b>Tendrás la app en tu pantalla de inicio.</p><button class="btn" data-inst="go">Instalar</button>'
+    :isIOS()?'<p><b>Instala Revo en tu iPhone</b>En Safari, toca compartir <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px"><path d="M12 3v12M7 8l5-5 5 5M5 13v7h14v-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> y luego «Añadir a pantalla de inicio».</p>'
+    :'<p><b>Instala Revo en tu móvil</b>Abre el menú ⋮ del navegador y elige «Instalar aplicación».</p>';
+  el.innerHTML='<div class="inst'+(solo?' solo':'')+'" role="region" aria-label="Instalar la app">'+body+'<button class="x" data-inst="off" aria-label="Cerrar aviso">×</button></div>';}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredInstall=e;renderInst();});
+window.addEventListener('appinstalled',function(){deferredInstall=null;renderInst();});
+document.addEventListener('click',function(ev){var b=ev.target.closest('[data-inst]');if(!b)return;
+  if(b.dataset.inst==='go'&&deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.then(function(){deferredInstall=null;renderInst();});}
+  if(b.dataset.inst==='off'){instHidden=true;try{localStorage.setItem('revo-inst-off','1');}catch(e){}if(/[?&]instalar=1/.test(location.search))history.replaceState(null,'',location.pathname+location.hash);renderInst();}});
+var _render=render;render=function(){_render();renderInst();};
 start();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(function(){});});}
 </script>
