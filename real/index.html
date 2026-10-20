@@ -320,7 +320,7 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     '<fieldset class="paychoice"><legend>¿Cómo pagas?</legend>'+
     '<label class="card row"><input type="radio" name="pay" value="share" '+(s.pay!=='full'?'checked':'')+' data-act="payMode"><span><b>Mi parte · '+euro(p+FEE)+'</b><br><span class="muted small">Cada uno paga lo suyo. La reserva se confirma cuando hayan pagado los '+ct.size+'.</span></span></label>'+
     '<label class="card row"><input type="radio" name="pay" value="full" '+(s.pay==='full'?'checked':'')+' data-act="payMode"><span><b>Pista entera · '+euro(p*ct.size+FEE)+'</b><br><span class="muted small">Para cuando los demás no tienen Revo. Queda confirmada al pagar.</span></span></label></fieldset>'+
-    '<p class="muted small" style="margin:0">Tienes 30 minutos para pagar. Si 2 horas antes no han pagado todos, se cancela y se devuelve el dinero. Se incluyen '+euro(FEE)+' de gestión por pago.</p>'+
+    '<p class="muted small" style="margin:0">Tienes 8 minutos para pagar; si no, la hora se libera. Si 2 horas antes no han pagado todos, se cancela y se devuelve el dinero. Se incluyen '+euro(FEE)+' de gestión por pago.</p>'+
     '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un momento…':'Reservar y pagar')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='match'){h=vMatch();}
   else if(s.type==='clubs'){var cc=S.club,sl=slotList();
