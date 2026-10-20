@@ -514,7 +514,12 @@ async function setUser(u){var uid=(u&&u.id)||null;
   var m=/^#p=([0-9a-f-]{36})$/.exec(location.hash);if(m){history.replaceState(null,'',location.pathname);openMatch(m[1]);}
   var sp=new URLSearchParams(location.search),pg=sp.get('pago'),pb=sp.get('b'),stv=sp.get('stripe');
   if(pg&&/^[0-9a-f-]{36}$/.test(pb||'')){history.replaceState(null,'',location.pathname);
-    if(pg==='ok'){toast('Pago recibido. Lo estamos confirmando…');openMatch(pb);setTimeout(function(){if(S.sheet&&S.sheet.id===pb)loadMatch(pb).then(keepChat).catch(function(){});},2500);}
+    if(pg==='ok'){toast('Pago recibido. Lo estamos confirmando…');openMatch(pb);
+      var tries=0;(async function chk(){tries++;var r=null;try{r=await fx('pago-verificar',{booking_id:pb});}catch(e){}
+        var done=r&&r.resultados&&r.resultados.some(function(x){return x==='pagado'||x==='ya_procesado'||x==='devuelto';});
+        if(done||tries>=4){await refresh();if(S.sheet&&S.sheet.id===pb)loadMatch(pb).then(keepChat).catch(function(){});
+          if(r&&r.estado_pago==='confirmed')toast('¡Pagado! Reserva confirmada');else if(done)toast('Pagado. Falta que paguen los demás');}
+        else setTimeout(chk,2000);})();}
     else{toast('Has cancelado el pago. Tu hueco sigue apartado unos minutos.',true);openMatch(pb);}}
   if(stv){history.replaceState(null,'',location.pathname);if(S.admin){S.tab='club';render();refresh();toast(stv==='vuelta'?'Volviste de Stripe: comprobando la cuenta del club…':'El enlace caducó, vuelve a pulsar «Conectar cobros»');}}}
 async function start(){
