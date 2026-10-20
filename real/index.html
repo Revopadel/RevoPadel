@@ -92,6 +92,12 @@ h3{font-size:18px}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;z-index:30;max-width:90%;text-align:center}
 .toast.bad{background:var(--bad);color:#2A0606}
 .center{text-align:center}
+.clubbtn{display:flex;align-items:baseline;gap:10px;background:none;border:0;padding:0;margin-top:4px;text-align:left}
+.clubchg{font-size:13px;font-weight:700;color:var(--accent)}
+.clubcard{display:flex;align-items:center;gap:12px;margin:0;width:100%;color:inherit}
+.clubcard.on{border:2px solid var(--accent)}
+.clubcard.soon{border-style:dashed;opacity:.85}
+.clubav{flex:0 0 auto;width:48px;height:48px;border-radius:14px;background:var(--hero);color:var(--lime);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;font-size:18px}
 .hero{background:var(--hero);border-radius:20px;padding:22px 18px;margin:8px 0 14px;border:1px solid #1A2B4A}
 .empty-state{text-align:center;padding:28px 12px;color:var(--muted)}
 .spin{display:inline-block;width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--lime);border-radius:50%;animation:sp .8s linear infinite;vertical-align:middle}
@@ -212,7 +218,7 @@ function dayChips(sel,act){var n=nowM().day,h='<div class="days">';
   return h+'</div>';}
 
 function vReservar(){
-  var c=S.club,h='<h2 style="margin-top:4px">'+esc(c.name)+' · '+esc(c.city)+'</h2><p class="muted small" style="margin:4px 0 8px">Mañana '+euro(c.price_morning)+' · tarde '+euro(c.price_afternoon)+' por jugador (tarde desde las '+hm(c.cut_min)+'). Reservas de 1 h 30.</p>';
+  var c=S.club,h='<button class="clubbtn" data-act="clubs" aria-label="Ver clubes"><h2>'+esc(c.name)+' · '+esc(c.city)+'</h2><span class="clubchg">Cambiar</span></button><p class="muted small" style="margin:4px 0 8px">Mañana '+euro(c.price_morning)+' · tarde '+euro(c.price_afternoon)+' por jugador (tarde desde las '+hm(c.cut_min)+'). Reservas de 1 h 30.</p>';
   h+=dayChips(S.day,'day');
   h+='<p style="margin:2px 0 0;font-weight:700;text-transform:capitalize">'+esc(dayLong(S.day))+'</p>';
   var occ={};S.occ.forEach(function(o){occ[o.court_id+'|'+o.start_min]=o;});
@@ -281,6 +287,10 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     (s.open?'<div class="row"><div class="field" style="flex:1"><label for="b-min">Nivel mínimo</label><select class="input" id="b-min" name="lmin">'+opts(mn)+'</select></div><div class="field" style="flex:1"><label for="b-max">Nivel máximo</label><select class="input" id="b-max" name="lmax">'+opts(mx)+'</select></div></div>':'')+
     '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Reservando…':'Confirmar reserva')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='match'){h=vMatch();}
+  else if(s.type==='clubs'){var cc=S.club,sl=slotList();
+    h='<div class="row between"><h2>Clubes</h2><button class="btn btn-line btn-sm" data-act="close">Cerrar</button></div>'+
+    '<div class="col" style="margin-top:12px"><button class="card clubcard on" data-act="close" aria-pressed="true"><span class="clubav">'+esc(cc.name.slice(0,2).toUpperCase())+'</span><span style="flex:1;text-align:left"><b>'+esc(cc.name)+'</b><br><span class="muted small">'+esc(cc.city)+' · '+S.courts.length+' pistas · '+hm(cc.open_min)+'–'+hm(sl[sl.length-1]+cc.slot_min)+'<br>Mañana '+euro(cc.price_morning)+' · tarde '+euro(cc.price_afternoon)+' por jugador</span></span><span class="small" style="color:var(--accent);font-weight:700">Actual</span></button>'+
+    '<div class="card clubcard soon"><span class="clubav"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span style="flex:1"><b>Más clubes próximamente</b><br><span class="muted small">Pronto podrás reservar en otros clubes de la zona con tu misma cuenta y tu nivel.</span></span></div></div>';}
   else if(s.type==='admin'){var c2=court(s.court);
     h='<h2>'+(s.kind==='manual'?'Reserva por teléfono':'Bloquear pista')+'</h2><p class="muted" style="margin:6px 0 12px;text-transform:capitalize">'+esc(c2.name)+' · '+esc(dayLong(S.panelDay))+' · '+hm(s.start)+'</p>'+
     '<form class="col" data-form="admin"><div class="field"><label for="a-label">'+(s.kind==='manual'?'Nombre de quien reserva':'Motivo')+'</label><input class="input" id="a-label" name="label" maxlength="40" placeholder="'+(s.kind==='manual'?'Ej.: Paco':'Ej.: Mantenimiento')+'"></div>'+
@@ -333,6 +343,7 @@ var A={
   toggleOpen:function(el){S.sheet.open=el.checked;renderSheet();},
   match:function(el){if(el.dataset.v)openMatch(el.dataset.v);else{S.sheet=null;renderSheet();}},
   close:function(){S.sheet=null;stopPoll();renderSheet();},
+  clubs:function(){S.sheet={type:'clubs'};renderSheet();},
   bg:function(el,ev){if(ev.target===el){S.sheet=null;stopPoll();renderSheet();}},
   join:async function(el){var r=await rpc('join_match',{p_booking:el.dataset.v},'¡Te has apuntado!');if(r.ok)await loadMatch(el.dataset.v);renderSheet();refresh();},
   leave:async function(el){var r=await rpc('leave_match',{p_booking:el.dataset.v},'Te has salido del partido');if(r.ok){S.sheet=null;stopPoll();}renderSheet();refresh();},
