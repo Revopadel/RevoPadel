@@ -427,7 +427,6 @@ var A={
     if(b&&b.kind!=='app'){stopPoll();S.sheet={type:'cancel',id:el.dataset.v,back:el.dataset.back||'',simple:true};renderSheet();return;}
     askRefund(el.dataset.v,false,el.dataset.back||'');},
   doCancel:async function(el){var s=S.sheet;
-    if(s.simple){var r=await rpc('cancel_booking',{p_booking:s.id},'Reserva cancelada');if(r.ok)S.sheet=null;renderSheet();refresh();return;}
     S.busy=true;renderSheet();
     try{var res=await fx('pago-cancelar',{booking_id:s.id,action:s.leave?'leave':'cancel'});
       toast((s.leave?'Te has salido del partido':'Reserva cancelada')+(res&&res.refund&&res.refund!=='0,00 €'?' · te devolvemos '+res.refund:''));S.sheet=null;stopPoll();}
