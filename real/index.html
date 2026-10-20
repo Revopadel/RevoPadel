@@ -264,6 +264,7 @@ function vPerfil(){var me=S.me,opts='';for(var x=10;x<=70;x+=5){var v=(x/10).toF
   '<div class="field"><label for="p-level">Nivel</label><select class="input" id="p-level" name="level">'+opts+'</select></div>'+
   '<button class="btn" type="submit">Guardar</button></form>'+
   '<div class="card"><div class="muted small">Has entrado como</div><b>'+esc(S.user.email)+'</b>'+(S.admin?'<div style="margin-top:6px"><span class="tag lime">Administrador del Olimpo</span></div>':'')+'</div>'+
+  (S.admin?'':'<form class="card col" data-form="claim"><div><b>¿Gestionas un club?</b><p class="muted small" style="margin:4px 0 0">Introduce el código que te hemos dado para activar el panel de tu club.</p></div><div class="field"><label for="c-code">Código del club</label><input class="input" id="c-code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej.: OLIMPO-XXXXXX" required minlength="4" maxlength="40"></div><button class="btn btn-line" type="submit"'+(S.busy?' disabled':'')+'>Activar panel del club</button></form>')+
   '<button class="btn btn-line btn-block" data-act="logout">Cerrar sesión</button>'+
   '<p class="muted small center" style="margin-top:18px">Versión de prueba conectada. Las reservas no se pagan en la app: se paga en el club como siempre.</p>';}
 
@@ -383,6 +384,14 @@ var FORMS={
     var r=await sb.from('match_messages').insert({booking_id:S.match.id,user_id:S.user.id,body:body});
     if(r.error){toast(errMsg(r.error),true);inp.value=body;return;}
     await loadMatch(S.match.id);keepChat();},
+  claim:async function(f){var code=String(new FormData(f).get('code')||'').trim();if(!code)return;
+    S.busy=true;render();
+    try{var r=await sb.rpc('claim_club_admin',{p_code:code});if(r.error)throw r.error;
+      if(!r.data){toast('Ese código no es correcto',true);}
+      else{var ad=await q(sb.from('club_admins').select('club_id').eq('user_id',S.user.id));S.admin=ad.some(function(a){return a.club_id===CLUB;});
+        if(S.admin){toast('Panel del club activado');S.tab='club';S.busy=false;render();await refresh();return;}}
+    }catch(e){toast(errMsg(e),true);}
+    S.busy=false;render();},
   profile:async function(f){var d=new FormData(f),name=String(d.get('name')||'').trim(),level=Number(d.get('level'));
     if(!name){toast('Pon tu nombre',true);return;}
     var r=await sb.from('profiles').update({name:name,level:level}).eq('id',S.user.id).select().single();
