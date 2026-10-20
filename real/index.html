@@ -178,7 +178,7 @@ async function loadBase(){
   S.club=res[0];S.courts=res[1];S.me=res[2];S.admin=res[3].some(function(a){return a.club_id===CLUB;});
   var n=nowM().day;if(!S.day)S.day=n;if(!S.panelDay)S.panelDay=n;
 }
-var SEL='id,court_id,day,start_min,kind,label,is_open,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,booking_players(user_id,guest_name,paid_at,profiles(name,level))';
+var SEL='id,court_id,day,start_min,kind,label,is_open,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,pay_deadline,booking_players(user_id,guest_name,paid_at,profiles(name,level))';
 var FEE=0.35;
 /* Llama a una función del servidor (pagos) y devuelve su respuesta o un error legible */
 async function fx(name,body){var r=await sb.functions.invoke(name,{body:body});
@@ -320,7 +320,10 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     '<fieldset class="paychoice"><legend>¿Cómo pagas?</legend>'+
     '<label class="card row"><input type="radio" name="pay" value="share" '+(s.pay!=='full'?'checked':'')+' data-act="payMode"><span><b>Mi parte · '+euro(p+FEE)+'</b><br><span class="muted small">Cada uno paga lo suyo. La reserva se confirma cuando hayan pagado los '+ct.size+'.</span></span></label>'+
     '<label class="card row"><input type="radio" name="pay" value="full" '+(s.pay==='full'?'checked':'')+' data-act="payMode"><span><b>Pista entera · '+euro(p*ct.size+FEE)+'</b><br><span class="muted small">Para cuando los demás no tienen Revo. Queda confirmada al pagar.</span></span></label></fieldset>'+
-    '<p class="muted small" style="margin:0">Tienes 8 minutos para pagar; si no, la hora se libera. Si 2 horas antes no han pagado todos, se cancela y se devuelve el dinero. Se incluyen '+euro(FEE)+' de gestión por pago.</p>'+
+    '<p class="muted small" style="margin:0">'+(s.open
+      ?'Tienes 8 minutos para pagar tu parte. El partido queda abierto 4 horas para que se apunte gente; si en ese tiempo no se completa, se cancela y se devuelve el dinero.'
+      :'Si pagas solo tu parte, tus compañeros tienen 20 minutos para pagar la suya con el enlace que les mandes; si no pagan todos, la pista se libera y se devuelve el dinero. Pagando la pista entera queda confirmada al momento.')+
+    ' Cada pago incluye '+euro(FEE)+' de gestión.</p>'+
     '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un momento…':'Reservar y pagar')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='match'){h=vMatch();}
   else if(s.type==='clubs'){var cc=S.club,sl=slotList();
@@ -351,7 +354,7 @@ function vMatch(){var b=S.match;if(!b)return '<div class="center"><span class="s
   var h='<div class="row between"><h2>'+(b.is_open?'Partido abierto':'Tu reserva')+'</h2><button class="btn btn-line btn-sm" data-act="close">Cerrar</button></div>'+
     '<p class="muted" style="margin:6px 0 10px;text-transform:capitalize">'+esc(ct.name)+' · '+esc(dayLong(b.day))+' · '+hm(b.start_min)+'–'+hm(b.start_min+S.club.slot_min)+(b.lvl_min!=null?' · nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):'')+'</p>';
   var pend=b.kind==='app'&&b.payment_state==='pending',mine=myRow(b),pc=paidCount(b);
-  if(b.kind==='app')h+=pend?'<div class="card paystate pend"><b>Pendiente de pago · '+pc+' de '+ct.size+' pagados</b><span class="muted small">Se confirma cuando paguen todos. Si 2 horas antes falta alguien, se cancela y se devuelve el dinero.</span></div>'
+  if(b.kind==='app')h+=pend?'<div class="card paystate pend"><b>Pendiente de pago · '+pc+' de '+ct.size+' pagados</b><span class="muted small">'+limitText(b)+'</span></div>'
     :'<div class="card paystate ok"><b>Reserva confirmada</b><span class="muted small">'+(b.pay_mode==='full'?'La pista está pagada entera.':'Han pagado todos los jugadores.')+'</span></div>';
   h+='<div class="list">';ps.forEach(function(p){h+='<div class="pl"><span>'+esc(pname(p))+(p.user_id===b.owner_id?' <span class="tag lime">Organiza</span>':'')+'</span><span class="small '+(p.paid_at?'paid':'muted')+'">'+(b.kind!=='app'?(p.profiles?'Nivel '+lvl(p.profiles.level):''):p.paid_at?'Pagado':'Sin pagar')+'</span></div>';});
   for(var i=ps.length;i<ct.size;i++)h+='<div class="pl empty">Hueco libre</div>';h+='</div>';
@@ -388,6 +391,17 @@ async function goPay(bookingId,kind){S.busy=true;renderSheet();render();
     if(res&&res.url){try{sessionStorage.setItem('revo-pago',bookingId);}catch(e){}window.location.href=res.url;return;}
     throw new Error('No se ha podido abrir el pago');}
   catch(e){S.busy=false;toast(errMsg(e),true);await refresh();openMatch(bookingId);}}
+/* Hora límite para que paguen todos: la que llegue antes entre el plazo de la reserva y 2 horas antes del partido */
+function limitText(b){var lim=null;
+  if(b.pay_deadline)lim=new Date(b.pay_deadline);
+  var two=startDate(b.day,b.start_min-120);if(!lim||two<lim)lim=two;
+  var hhmm=new Intl.DateTimeFormat('es-ES',{timeZone:TZ,hour:'2-digit',minute:'2-digit'}).format(lim);
+  var sameDay=new Intl.DateTimeFormat('en-CA',{timeZone:TZ}).format(lim)===nowM().day;
+  return 'Tienen que pagar todos antes de las '+hhmm+(sameDay?'':' del '+dfmt(new Intl.DateTimeFormat('en-CA',{timeZone:TZ}).format(lim),{weekday:'long',day:'numeric'}))+'. Si no, la pista se libera y se devuelve el dinero.';}
+/* Fecha real (hora de España) del día y minuto dados */
+function startDate(day,min){var guess=new Date(day+'T00:00:00Z');guess=new Date(guess.getTime()+min*60000);
+  var p={};new Intl.DateTimeFormat('en-GB',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(guess).forEach(function(x){p[x.type]=x.value;});
+  var shown=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute);return new Date(guess.getTime()-(shown-guess.getTime()));}
 function findBooking(id){var all=[].concat(S.match?[S.match]:[],S.panel||[],S.mine||[],S.open||[]);for(var i=0;i<all.length;i++)if(all[i].id===id)return all[i];return null;}
 function refundNote(pv,leave){
   if(!pv.confirmed)return 'Como la reserva aún no estaba confirmada, se devuelve la pista entera. Los '+euro(FEE)+' de gestión no se devuelven.';
