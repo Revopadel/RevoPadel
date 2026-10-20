@@ -333,6 +333,7 @@ dialog video{width:100%;border-radius:22px;background:#000}
         </div>
         <div class="field"><label for="l-contact">Teléfono o correo</label><input id="l-contact" name="contact" required minlength="5" maxlength="120" autocomplete="tel"></div>
         <div class="field"><label for="l-msg">¿Algo más que debamos saber? (opcional)</label><textarea id="l-msg" name="message" maxlength="600"></textarea></div>
+        <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"><label for="l-web">No rellenes este campo</label><input id="l-web" name="website" tabindex="-1" autocomplete="off"></div>
         <button class="btn btn-lima" type="submit" id="leadBtn">Enviar</button>
         <p class="form-msg" id="leadMsg" role="status" aria-live="polite"></p>
       </form>
@@ -392,8 +393,8 @@ dialog video{width:100%;border-radius:22px;background:#000}
   dlg.addEventListener('click',function(e){if(e.target===dlg)cerrar();});
   dlg.addEventListener('close',function(){vid.pause();});
 
-  /* Formulario para clubes: se guarda en Supabase (solo se puede escribir, nadie puede leerlo desde fuera) */
-  var SB='https://ediueyqmkrboxvmisjmr.supabase.co/rest/v1/club_leads';
+  /* Formulario para clubes: lo recibe la función contacto-club de Supabase, que lo guarda y avisa por correo */
+  var SB='https://ediueyqmkrboxvmisjmr.supabase.co/functions/v1/contacto-club';
   var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkaXVleXFta3Jib3h2bWlzam1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MTM1NzAsImV4cCI6MjEwNzk4OTU3MH0.5tLy3iUSY2U9lKO5n9PlOdWG6ExdBKlIIzOrvjf-w4g';
   var form=document.getElementById('leadForm'),msg=document.getElementById('leadMsg'),btn=document.getElementById('leadBtn');
   form.addEventListener('submit',function(e){
@@ -401,9 +402,9 @@ dialog video{width:100%;border-radius:22px;background:#000}
     if(!form.reportValidity())return;
     var d=new FormData(form),courts=String(d.get('courts')||'').trim();
     var body={club_name:String(d.get('club_name')).trim(),city:String(d.get('city')).trim(),contact_name:String(d.get('contact_name')).trim(),
-      contact:String(d.get('contact')).trim(),courts:courts?parseInt(courts,10):null,message:String(d.get('message')||'').trim()||null};
+      contact:String(d.get('contact')).trim(),courts:courts?parseInt(courts,10):null,message:String(d.get('message')||'').trim()||null,website:String(d.get('website')||'')};
     btn.disabled=true;btn.textContent='Enviando…';msg.className='form-msg';msg.textContent='';
-    fetch(SB,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)})
+    fetch(SB,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){if(!r.ok)throw new Error(r.status);
         form.reset();msg.className='form-msg ok';msg.textContent='Enviado. Te escribimos esta semana.';})
       .catch(function(){msg.className='form-msg bad';msg.textContent='No se ha podido enviar. Revisa tu conexión y vuelve a intentarlo.';})
