@@ -35,6 +35,10 @@ button{cursor:pointer}
 .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:#14223D;color:var(--accent)}
 .tag.lime{background:#22300A;color:var(--lime)}
 .tag.warn{background:#332708;color:var(--warn)}
+.cdtag{background:#14223D;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.cdbox{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.25)}
+.cdbox span{font-size:13px;opacity:.85}.cdbox b{font-size:22px;font-variant-numeric:tabular-nums}
+.cd.urg{color:var(--warn)}
 h1,h2,h3{font-family:var(--font-d);font-weight:800;text-transform:uppercase;letter-spacing:.3px;margin:0}
 h1{font-size:30px;line-height:1}
 h2{font-size:22px}
@@ -265,6 +269,7 @@ function matchCard(b){var ct=court(b.court_id),n=b.booking_players.length,me=b.b
     '<div class="row between"><b style="text-transform:capitalize">'+esc(dayLong(b.day))+' · '+hm(b.start_min)+'</b>'+
     (b.kind==='app'&&b.payment_state==='pending'?'<span class="tag warn">Pagado '+paidCount(b)+'/'+ct.size+'</span>':b.is_open?'<span class="tag">'+n+'/'+ct.size+' jugadores</span>':'<span class="tag lime">Confirmada</span>')+'</div>'+
     '<div class="muted small" style="margin-top:4px">'+esc(ct.name)+(b.lvl_min!=null?' · nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):'')+(owner?' · organiza '+esc(pname(owner)):'')+'</div>'+
+    (cdHtml(b)?'<div style="margin-top:8px">'+cdHtml(b)+'</div>':'')+
     (me?'<div class="small" style="margin-top:6px;color:var(--ok);font-weight:700">'+(b.owner_id===S.user.id?'Organizas tú':'Estás apuntado')+'</div>':'')+
     '</button>';}
 
@@ -354,7 +359,7 @@ function vMatch(){var b=S.match;if(!b)return '<div class="center"><span class="s
   var h='<div class="row between"><h2>'+(b.is_open?'Partido abierto':'Tu reserva')+'</h2><button class="btn btn-line btn-sm" data-act="close">Cerrar</button></div>'+
     '<p class="muted" style="margin:6px 0 10px;text-transform:capitalize">'+esc(ct.name)+' · '+esc(dayLong(b.day))+' · '+hm(b.start_min)+'–'+hm(b.start_min+S.club.slot_min)+(b.lvl_min!=null?' · nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):'')+'</p>';
   var pend=b.kind==='app'&&b.payment_state==='pending',mine=myRow(b),pc=paidCount(b);
-  if(b.kind==='app')h+=pend?'<div class="card paystate pend"><b>Pendiente de pago · '+pc+' de '+ct.size+' pagados</b><span class="muted small">'+limitText(b)+'</span></div>'
+  if(b.kind==='app')h+=pend?'<div class="card paystate pend"><b>Pendiente de pago · '+pc+' de '+ct.size+' pagados</b><span class="muted small">'+limitText(b)+'</span>'+cdHtml(b,true)+'</div>'
     :'<div class="card paystate ok"><b>Reserva confirmada</b><span class="muted small">'+(b.pay_mode==='full'?'La pista está pagada entera.':'Han pagado todos los jugadores.')+'</span></div>';
   h+='<div class="list">';ps.forEach(function(p){h+='<div class="pl"><span>'+esc(pname(p))+(p.user_id===b.owner_id?' <span class="tag lime">Organiza</span>':'')+'</span><span class="small '+(p.paid_at?'paid':'muted')+'">'+(b.kind!=='app'?(p.profiles?'Nivel '+lvl(p.profiles.level):''):p.paid_at?'Pagado':'Sin pagar')+'</span></div>';});
   for(var i=ps.length;i<ct.size;i++)h+='<div class="pl empty">Hueco libre</div>';h+='</div>';
@@ -391,6 +396,14 @@ async function goPay(bookingId,kind){S.busy=true;renderSheet();render();
     if(res&&res.url){try{sessionStorage.setItem('revo-pago',bookingId);}catch(e){}window.location.href=res.url;return;}
     throw new Error('No se ha podido abrir el pago');}
   catch(e){S.busy=false;toast(errMsg(e),true);await refresh();openMatch(bookingId);}}
+/* Cuenta atrás de los partidos abiertos (plazo de 4 horas para completarse) */
+function limitDate(b){var lim=b.pay_deadline?new Date(b.pay_deadline):null;var two=startDate(b.day,b.start_min-120);if(!lim||two<lim)lim=two;return lim;}
+function cdText(ms){if(ms<=0)return '0:00';var t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),sg=t%60;
+  return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(sg).padStart(2,'0');}
+function cdHtml(b,big){if(!(b.is_open&&b.kind==='app'&&b.payment_state==='pending'))return '';var lim=limitDate(b);
+  return big?'<div class="cdbox"><span>Se cancela si no se completa en</span><b class="cd" data-until="'+lim.toISOString()+'">'+cdText(lim-Date.now())+'</b></div>'
+    :'<span class="tag cdtag">⏳ <span class="cd" data-until="'+lim.toISOString()+'">'+cdText(lim-Date.now())+'</span></span>';}
+setInterval(function(){var els=document.querySelectorAll('.cd[data-until]');for(var i=0;i<els.length;i++){var ms=new Date(els[i].getAttribute('data-until'))-Date.now();els[i].textContent=cdText(ms);if(ms<600000)els[i].classList.add('urg');}},1000);
 /* Hora límite para que paguen todos: la que llegue antes entre el plazo de la reserva y 2 horas antes del partido */
 function limitText(b){var lim=null;
   if(b.pay_deadline)lim=new Date(b.pay_deadline);
