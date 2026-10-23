@@ -36,6 +36,7 @@ button{cursor:pointer}
 .tag.lime{background:#22300A;color:var(--lime)}
 .tag.warn{background:#332708;color:var(--warn)}
 .fixtag{background:#1F2A44;color:var(--accent);font-size:10px;padding:2px 6px;margin-left:4px;vertical-align:1px}
+.pushcard{border-color:#3B4A12;background:linear-gradient(180deg,rgba(212,240,74,.07),transparent)}
 .contact{display:flex;flex-direction:column;gap:12px}
 .contact a.btn{text-decoration:none}
 .caja{display:flex;flex-direction:column;gap:8px}
@@ -287,7 +288,7 @@ function vPartidos(){var h='<h2 style="margin-top:4px">Partidos abiertos</h2><p 
   if(!list.length)return h+'<div class="empty-state">No hay partidos abiertos ahora mismo.<br><br><button class="btn" data-act="tab" data-v="reservar">Reserva y abre uno</button></div>';
   return h+list.map(matchCard).join('');}
 
-function vMias(){var h='<h2 style="margin-top:4px">Mis reservas</h2>';
+function vMias(){var h='<h2 style="margin-top:4px">Mis reservas</h2>'+pushCard(true);
   if(!S.mine.length)return h+'<div class="empty-state">No tienes reservas próximas.<br><br><button class="btn" data-act="tab" data-v="reservar">Reservar pista</button></div>';
   return h+S.mine.map(matchCard).join('');}
 
@@ -298,10 +299,41 @@ function vPerfil(){var me=S.me,opts='';for(var x=10;x<=70;x+=5){var v=(x/10).toF
   '<button class="btn" type="submit">Guardar</button></form>'+
   '<div class="card"><div class="muted small">Has entrado como</div><b>'+esc(S.user.email)+'</b>'+(S.admin?'<div style="margin-top:6px"><span class="tag lime">Administrador del Olimpo</span></div>':'')+'</div>'+
   (S.admin?'':'<form class="card col" data-form="claim"><div><b>¿Gestionas un club?</b><p class="muted small" style="margin:4px 0 0">Introduce el código que te hemos dado para activar el panel de tu club.</p></div><div class="field"><label for="c-code">Código del club</label><input class="input" id="c-code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej.: OLIMPO-XXXXXX" required minlength="4" maxlength="40"></div><button class="btn btn-line" type="submit"'+(S.busy?' disabled':'')+'>Activar panel del club</button></form>')+
-  contactCard()+
+  pushCard(false)+contactCard()+
   '<button class="btn btn-line btn-block" data-act="logout">Cerrar sesión</button>'+
   '<p class="muted small center" style="margin-top:18px">Versión de prueba: los pagos son de mentira. Para pagar usa la tarjeta 4242 4242 4242 4242, cualquier fecha futura y cualquier CVC.</p>';}
 
+/* ===== Avisos en el móvil (notificaciones push) ===== */
+var IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent),IS_STANDALONE=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+function pushSupported(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;}
+async function pushState(){if(!pushSupported())return IS_IOS&&!IS_STANDALONE?'ios':'no';
+  if(Notification.permission==='denied')return 'denied';
+  try{var reg=await navigator.serviceWorker.ready;var sub=await reg.pushManager.getSubscription();return sub?'on':'off';}catch(e){return 'off';}}
+function b64u(b){var p='='.repeat((4-b.length%4)%4),r=atob((b+p).replace(/-/g,'+').replace(/_/g,'/')),a=new Uint8Array(r.length);for(var i=0;i<r.length;i++)a[i]=r.charCodeAt(i);return a;}
+async function refreshPush(){S.push=await pushState();if(S.tab==='perfil'||S.tab==='mias')render();
+  // si el móvil ya tenía avisos, se vinculan a la cuenta con la que se ha entrado
+  if(S.push==='on'){try{var reg=await navigator.serviceWorker.ready;var sub=await reg.pushManager.getSubscription();if(sub)await fx('push-alta',{action:'alta',subscription:sub.toJSON()});}catch(e){}}}
+async function pushOn(){S.busy=true;render();
+  try{var perm=await Notification.requestPermission();
+    if(perm!=='granted'){toast('Sin permiso no podemos avisarte. Puedes darlo en los ajustes del navegador.',true);}
+    else{var reg=await navigator.serviceWorker.ready;var k=await fx('push-alta',{action:'clave'});
+      var sub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(k.publicKey)});
+      await fx('push-alta',{action:'alta',subscription:sub.toJSON()});
+      var t=await fx('push-alta',{action:'prueba'});toast(t&&t.enviadas?'¡Avisos activados! Te hemos mandado uno de prueba':'Avisos activados');}}
+  catch(e){toast(errMsg(e),true);}
+  S.busy=false;S.push=await pushState();render();}
+async function pushOff(){S.busy=true;render();
+  try{var reg=await navigator.serviceWorker.ready;var sub=await reg.pushManager.getSubscription();
+    if(sub){await fx('push-alta',{action:'baja',endpoint:sub.endpoint}).catch(function(){});await sub.unsubscribe();}toast('Avisos desactivados');}
+  catch(e){toast(errMsg(e),true);}
+  S.busy=false;S.push=await pushState();render();}
+function pushCard(compact){var st=S.push,h;
+  if(!st||st==='no')return '';
+  if(st==='on')return compact?'':'<div class="card row between"><span><b>Avisos en el móvil</b><br><span class="muted small">Activados en este móvil.</span></span><span class="row" style="gap:6px"><button class="btn btn-line btn-sm" data-act="pushTest"'+(S.busy?' disabled':'')+'>Probar</button><button class="btn btn-line btn-sm" data-act="pushOff"'+(S.busy?' disabled':'')+'>Quitar</button></span></div>';
+  if(st==='ios')return '<div class="card"><b>Avisos en el iPhone</b><p class="muted small" style="margin:4px 0 0">Para recibir avisos, primero instala la app: en Safari pulsa Compartir → «Añadir a pantalla de inicio» y ábrela desde ahí.</p></div>';
+  if(st==='denied')return compact?'':'<div class="card"><b>Avisos bloqueados</b><p class="muted small" style="margin:4px 0 0">Has bloqueado las notificaciones. Actívalas en los ajustes del navegador para esta web y vuelve aquí.</p></div>';
+  h='<div class="card col pushcard"><div><b>🔔 Activa los avisos</b><p class="muted small" style="margin:4px 0 0">Te avisamos cuando tu reserva se confirme, alguien se una a tu partido o se cancele y te devolvamos el dinero.</p></div><button class="btn" data-act="pushOn"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un momento…':'Activar avisos')+'</button></div>';
+  return h;}
 /* Contacto: el club (reservas, pistas) y Revo (la app) */
 function contactCard(){var c=S.club,tel=c.contact_phone,mail=c.contact_email,h='<div class="card col" id="contacto"><b>Contacto</b>';
   h+='<div class="contact"><div><span class="muted small">'+esc(c.name)+' · dudas de reservas, pistas o pagos en el club</span>';
@@ -509,6 +541,9 @@ var A={
       toast((s.leave?'Te has salido del partido':'Reserva cancelada')+(res&&res.refund&&res.refund!=='0,00 €'?' · te devolvemos '+res.refund:''));S.sheet=null;stopPoll();}
     catch(e){toast(errMsg(e),true);}
     S.busy=false;renderSheet();refresh();},
+  pushOn:function(){pushOn();},
+  pushOff:function(){pushOff();},
+  pushTest:async function(){try{var t=await fx('push-alta',{action:'prueba'});toast(t.enviadas?'Aviso de prueba enviado':'No hemos podido enviar el aviso',!t.enviadas);}catch(e){toast(errMsg(e),true);}},
   ajustes:function(){S.busy=false;S.sheet={type:'ajustes'};renderSheet();},
   fijos:async function(){S.sheet={type:'fijos'};S.fijos=null;renderSheet();
     try{var r=await fx('club-ajustes',{club_id:CLUB,action:'fijos'});S.fijos=r.fijos||[];}catch(e){S.fijos=[];toast(errMsg(e),true);}
@@ -595,6 +630,7 @@ async function setUser(u){var uid=(u&&u.id)||null;
   if(!S.user){S.loading=false;render();return;}
   S.loading=true;render();
   try{await loadBase();await loadTab();}catch(e){if(curUid===uid)toast(errMsg(e),true);}
+  refreshPush();
   if(curUid!==uid)return;
   S.loading=false;render();
   var m=/^#p=([0-9a-f-]{36})$/.exec(location.hash);if(m){history.replaceState(null,'',location.pathname);openMatch(m[1]);}
