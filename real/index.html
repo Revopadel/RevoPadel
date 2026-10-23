@@ -36,6 +36,8 @@ button{cursor:pointer}
 .tag.lime{background:#22300A;color:var(--lime)}
 .tag.warn{background:#332708;color:var(--warn)}
 .fixtag{background:#1F2A44;color:var(--accent);font-size:10px;padding:2px 6px;margin-left:4px;vertical-align:1px}
+.contact{display:flex;flex-direction:column;gap:12px}
+.contact a.btn{text-decoration:none}
 .caja{display:flex;flex-direction:column;gap:8px}
 .cajagrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cajagrid>div{display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:12px;background:var(--surface2)}
@@ -140,6 +142,7 @@ h3{font-size:18px}
 var SB_URL='https://ediueyqmkrboxvmisjmr.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkaXVleXFta3Jib3h2bWlzam1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MTM1NzAsImV4cCI6MjEwNzk4OTU3MH0.5tLy3iUSY2U9lKO5n9PlOdWG6ExdBKlIIzOrvjf-w4g';
 var CLUB='olimpo';
+var REVO_EMAIL='revopadel.app@gmail.com';
 var sb=window.supabase.createClient(SB_URL,SB_KEY);
 
 /* ===== Estado ===== */
@@ -295,11 +298,21 @@ function vPerfil(){var me=S.me,opts='';for(var x=10;x<=70;x+=5){var v=(x/10).toF
   '<button class="btn" type="submit">Guardar</button></form>'+
   '<div class="card"><div class="muted small">Has entrado como</div><b>'+esc(S.user.email)+'</b>'+(S.admin?'<div style="margin-top:6px"><span class="tag lime">Administrador del Olimpo</span></div>':'')+'</div>'+
   (S.admin?'':'<form class="card col" data-form="claim"><div><b>¿Gestionas un club?</b><p class="muted small" style="margin:4px 0 0">Introduce el código que te hemos dado para activar el panel de tu club.</p></div><div class="field"><label for="c-code">Código del club</label><input class="input" id="c-code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej.: OLIMPO-XXXXXX" required minlength="4" maxlength="40"></div><button class="btn btn-line" type="submit"'+(S.busy?' disabled':'')+'>Activar panel del club</button></form>')+
+  contactCard()+
   '<button class="btn btn-line btn-block" data-act="logout">Cerrar sesión</button>'+
   '<p class="muted small center" style="margin-top:18px">Versión de prueba: los pagos son de mentira. Para pagar usa la tarjeta 4242 4242 4242 4242, cualquier fecha futura y cualquier CVC.</p>';}
 
+/* Contacto: el club (reservas, pistas) y Revo (la app) */
+function contactCard(){var c=S.club,tel=c.contact_phone,mail=c.contact_email,h='<div class="card col" id="contacto"><b>Contacto</b>';
+  h+='<div class="contact"><div><span class="muted small">'+esc(c.name)+' · dudas de reservas, pistas o pagos en el club</span>';
+  if(tel||mail){h+='<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">'+
+    (tel?'<a class="btn btn-line btn-sm" href="tel:'+esc(tel.replace(/\s+/g,''))+'">Llamar · '+esc(tel)+'</a><a class="btn btn-line btn-sm" target="_blank" rel="noopener" href="https://wa.me/'+esc((tel.replace(/[^0-9]/g,'').length===9?'34':'')+tel.replace(/[^0-9]/g,''))+'">WhatsApp</a>':'')+
+    (mail?'<a class="btn btn-line btn-sm" href="mailto:'+esc(mail)+'">'+esc(mail)+'</a>':'')+'</div>';}
+  else h+='<p class="muted small" style="margin:6px 0 0">El club aún no ha añadido su teléfono. Pregunta en recepción.</p>';
+  h+='</div><div><span class="muted small">Revo · problemas con la app, la cuenta o un pago online</span><div style="margin-top:6px"><a class="btn btn-line btn-sm" href="mailto:'+REVO_EMAIL+'?subject='+encodeURIComponent('Ayuda con Revo')+'">'+REVO_EMAIL+'</a></div></div></div></div>';
+  return h;}
 function vClub(){var h='<h2 style="margin-top:4px">Panel del club</h2><p class="muted small" style="margin:4px 0 8px">Todas las reservas del día. Apunta las que te llegan por teléfono o bloquea pistas.</p>'+cobrosCard()+
-    '<div class="row" style="gap:8px;margin:0 0 10px"><button class="btn btn-line btn-sm" style="flex:1" data-act="ajustes">Precios y horario</button><button class="btn btn-line btn-sm" style="flex:1" data-act="fijos">Reservas fijas</button></div>'+
+    '<div class="row" style="gap:8px;margin:0 0 10px"><button class="btn btn-line btn-sm" style="flex:1" data-act="ajustes">Precios, horario y contacto</button><button class="btn btn-line btn-sm" style="flex:1" data-act="fijos">Reservas fijas</button></div>'+
     dayChips(S.panelDay,'panelDay');
   var by={};S.panel.forEach(function(b){by[b.court_id+'|'+b.start_min]=b;});
   var total=S.panel.length,cap=S.courts.length*slotList().length;
@@ -355,12 +368,14 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     '<div class="col" style="margin-top:12px"><button class="card clubcard on" data-act="close" aria-pressed="true"><span class="clubav">'+esc(cc.name.slice(0,2).toUpperCase())+'</span><span style="flex:1;text-align:left"><b>'+esc(cc.name)+'</b><br><span class="muted small">'+esc(cc.city)+' · '+S.courts.length+' pistas · '+hm(cc.open_min)+'–'+hm(sl[sl.length-1]+cc.slot_min)+'<br>Mañana '+euro(cc.price_morning)+' · tarde '+euro(cc.price_afternoon)+' por jugador</span></span><span class="small" style="color:var(--accent);font-weight:700">Actual</span></button>'+
     '<div class="card clubcard soon"><span class="clubav"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span style="flex:1"><b>Más clubes próximamente</b><br><span class="muted small">Pronto podrás reservar en otros clubes de la zona con tu misma cuenta y tu nivel.</span></span></div></div>';}
   else if(s.type==='ajustes'){var c3=S.club;
-    h='<h2>Precios y horario</h2><p class="muted small" style="margin:6px 0 12px">Los cambios valen para las reservas nuevas. Las ya hechas no cambian de precio.</p>'+
+    h='<h2>Ajustes del club</h2><p class="muted small" style="margin:6px 0 12px">Los cambios valen para las reservas nuevas. Las ya hechas no cambian de precio.</p>'+
     '<form class="col" data-form="ajustes"><div class="row" style="gap:10px"><div class="field" style="flex:1"><label for="j-pm">Mañana (€/jugador)</label><input class="input" id="j-pm" name="pm" type="number" step="0.05" min="0" max="50" value="'+Number(c3.price_morning)+'" required></div>'+
     '<div class="field" style="flex:1"><label for="j-pa">Tarde (€/jugador)</label><input class="input" id="j-pa" name="pa" type="number" step="0.05" min="0" max="50" value="'+Number(c3.price_afternoon)+'" required></div></div>'+
     '<div class="field"><label for="j-cut">La tarde empieza a las</label><input class="input" id="j-cut" name="cut" type="time" step="900" value="'+toHM(c3.cut_min)+'" required></div>'+
     '<div class="row" style="gap:10px"><div class="field" style="flex:1"><label for="j-open">Abre</label><input class="input" id="j-open" name="open" type="time" step="900" value="'+toHM(c3.open_min)+'" required></div>'+
     '<div class="field" style="flex:1"><label for="j-close">Cierra</label><input class="input" id="j-close" name="close" type="time" step="900" value="'+toHM(c3.close_min)+'" required></div></div>'+
+    '<div class="field"><label for="j-tel">Teléfono del club (lo ven los jugadores)</label><input class="input" id="j-tel" name="tel" type="tel" inputmode="tel" maxlength="18" placeholder="Ej.: 957 00 00 00" value="'+esc(c3.contact_phone||'')+'"></div>'+
+    '<div class="field"><label for="j-mail">Correo del club (opcional)</label><input class="input" id="j-mail" name="mail" type="email" maxlength="80" value="'+esc(c3.contact_email||'')+'"></div>'+
     '<p class="muted small" style="margin:0">Cada reserva dura '+(c3.slot_min/60).toString().replace('.',',')+' h, empezando a la hora de apertura.</p>'+
     '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Guardando…':'Guardar')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='fijos'){
@@ -540,9 +555,9 @@ var FORMS={
     var r=await rpc('admin_block_slot',{p_court:s.court,p_day:S.panelDay,p_start:s.start,p_kind:s.kind,p_label:String(d.get('label')||'').trim()||null},s.kind==='manual'?'Reserva apuntada':'Pista bloqueada');
     if(r.ok)S.sheet=null;renderSheet();refresh();},
   ajustes:async function(f){var d=new FormData(f);
-    var body={club_id:CLUB,action:'guardar',price_morning:Number(d.get('pm')),price_afternoon:Number(d.get('pa')),cut_min:fromHM(d.get('cut')),open_min:fromHM(d.get('open')),close_min:fromHM(d.get('close'))};
+    var body={club_id:CLUB,action:'guardar',price_morning:Number(d.get('pm')),price_afternoon:Number(d.get('pa')),cut_min:fromHM(d.get('cut')),open_min:fromHM(d.get('open')),close_min:fromHM(d.get('close')),contact_phone:String(d.get('tel')||''),contact_email:String(d.get('mail')||'')};
     S.busy=true;renderSheet();
-    try{await fx('club-ajustes',body);S.club=await q(sb.from('clubs').select('*').eq('id',CLUB).single());S.busy=false;S.sheet=null;toast('Precios y horario guardados');}
+    try{await fx('club-ajustes',body);S.club=await q(sb.from('clubs').select('*').eq('id',CLUB).single());S.busy=false;S.sheet=null;toast('Ajustes guardados');}
     catch(e){S.busy=false;toast(errMsg(e),true);}
     renderSheet();refresh();},
   chat:async function(f){var inp=f.querySelector('input'),body=inp.value.trim();if(!body)return;inp.value='';
