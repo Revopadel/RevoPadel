@@ -255,7 +255,7 @@ function vReservar(){
     h+='<div class="card"><div class="row between"><div><h3>'+esc(ct.name)+'</h3><span class="muted small">'+esc(ct.description||'')+'</span></div></div><div class="slots">';
     slotList().forEach(function(m){var o=occ[ct.id+'|'+m],past=isPast(S.day,m);
       if(o){var mine=(S.mineIds||[]).indexOf(o.booking_id)>=0;
-        if(mine)h+='<button class="slot mine" data-act="match" data-v="'+o.booking_id+'">'+hm(m)+'<small>Tuya</small></button>';
+        if(mine)h+='<button class="slot mine" data-act="match" data-v="'+o.booking_id+'">'+hm(m)+'<small>'+(o.kind==='app'&&o.payment_state==='pending'?'Sin pagar':'Tuya')+'</small></button>';
         else if(o.is_open&&o.players<o.size&&!past)h+='<button class="slot open" data-act="match" data-v="'+o.booking_id+'">'+hm(m)+'<small>Abierto '+o.players+'/'+o.size+'</small></button>';
         else h+='<div class="slot taken">'+hm(m)+'<small>Ocupada</small></div>';}
       else if(past)h+='<div class="slot past">'+hm(m)+'<small>Pasada</small></div>';
@@ -436,7 +436,7 @@ var A={
   tab:function(el){S.tab=el.dataset.v;if(S.tab==='club'&&S.cobros)S.cobros.stale=true;S.sheet=null;stopPoll();render();refresh();window.scrollTo(0,0);},
   day:function(el){S.day=el.dataset.v;render();refresh();},
   panelDay:function(el){S.panelDay=el.dataset.v;render();refresh();},
-  book:function(el){S.sheet={type:'book',court:el.dataset.court,start:+el.dataset.v,open:false};renderSheet();},
+  book:function(el){S.busy=false;S.sheet={type:'book',court:el.dataset.court,start:+el.dataset.v,open:false};renderSheet();},
   toggleOpen:function(el){S.sheet.open=el.checked;renderSheet();},
   match:function(el){if(el.dataset.v)openMatch(el.dataset.v);else{S.sheet=null;renderSheet();}},
   close:function(){S.sheet=null;stopPoll();renderSheet();},
@@ -534,12 +534,18 @@ async function setUser(u){var uid=(u&&u.id)||null;
           if(r&&r.estado_pago==='confirmed')toast('¡Pagado! Reserva confirmada');else if(done)toast('Pagado. Falta que paguen los demás');}
         else setTimeout(chk,2000);})();}
     else{toast('Has cancelado el pago. Tu hueco sigue apartado unos minutos.',true);openMatch(pb);}}
+  if(S.reopenPay&&!pg){var rp=S.reopenPay;S.reopenPay=null;openMatch(rp);toast('No has terminado el pago. Tu hueco sigue apartado unos minutos: puedes pagar o cancelar.');}
   if(stv){history.replaceState(null,'',location.pathname);if(S.admin){S.tab='club';render();refresh();toast(stv==='vuelta'?'Volviste de Stripe: comprobando la cuenta del club…':'El enlace caducó, vuelve a pulsar «Conectar cobros»');}}}
 async function start(){
   try{var r=await sb.auth.getSession();await setUser(r.data.session&&r.data.session.user);}
   catch(e){S.loading=false;toast(errMsg(e),true);render();}}
 sb.auth.onAuthStateChange(function(ev,session){var u=session&&session.user;setTimeout(function(){setUser(u);},0);});
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.user&&S.club)refresh();});
+/* Al volver atrás desde Stripe el navegador restaura la página tal cual (con «Un momento…»): se desbloquea y se abre la reserva para pagar o cancelar */
+window.addEventListener('pageshow',function(e){var pb=null;try{pb=sessionStorage.getItem('revo-pago');sessionStorage.removeItem('revo-pago');}catch(_){}
+  if(!e.persisted&&!pb)return;S.busy=false;
+  if(S.user&&S.club){refresh().then(function(){if(pb&&!/[?&]pago=/.test(location.search)){openMatch(pb);toast('No has terminado el pago. Tu hueco sigue apartado unos minutos: puedes pagar o cancelar.');}});}
+  else{if(pb&&!/[?&]pago=/.test(location.search))S.reopenPay=pb;render();}});
 window.addEventListener('hashchange',function(){var m=/^#p=([0-9a-f-]{36})$/.exec(location.hash);if(m&&S.user&&S.club){history.replaceState(null,'',location.pathname);openMatch(m[1]);}});
 /* Aviso para instalar la app (Android: botón; iPhone: pasos de Safari) */
 var deferredInstall=null,instHidden=false;
