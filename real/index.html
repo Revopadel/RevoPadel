@@ -35,6 +35,11 @@ button{cursor:pointer}
 .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:#14223D;color:var(--accent)}
 .tag.lime{background:#22300A;color:var(--lime)}
 .tag.warn{background:#332708;color:var(--warn)}
+.fixtag{background:#1F2A44;color:var(--accent);font-size:10px;padding:2px 6px;margin-left:4px;vertical-align:1px}
+.caja{display:flex;flex-direction:column;gap:8px}
+.cajagrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cajagrid>div{display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:12px;background:var(--surface2)}
+.cajagrid b{font-family:var(--font-d);font-size:24px}
 .cdtag{background:#14223D;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.5px}
 .cdbox{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.25)}
 .cdbox span{font-size:13px;opacity:.85}.cdbox b{font-size:22px;font-variant-numeric:tabular-nums}
@@ -182,7 +187,7 @@ async function loadBase(){
   S.club=res[0];S.courts=res[1];S.me=res[2];S.admin=res[3].some(function(a){return a.club_id===CLUB;});
   var n=nowM().day;if(!S.day)S.day=n;if(!S.panelDay)S.panelDay=n;
 }
-var SEL='id,court_id,day,start_min,kind,label,is_open,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,pay_deadline,booking_players(user_id,guest_name,paid_at,profiles(name,level))';
+var SEL='id,court_id,day,start_min,kind,label,is_open,fixed_id,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,pay_deadline,booking_players(user_id,guest_name,paid_at,profiles(name,level))';
 var FEE=0.35;
 /* Llama a una función del servidor (pagos) y devuelve su respuesta o un error legible */
 async function fx(name,body){var r=await sb.functions.invoke(name,{body:body});
@@ -199,6 +204,7 @@ async function loadTab(){
   else if(S.tab==='mias'){var rows2=await q(sb.from('bookings').select(SEL).eq('status','active').gte('day',n).order('day').order('start_min'));
     S.mine=rows2.filter(function(b){return !isPast(b.day,b.start_min)&&b.booking_players.some(function(p){return p.user_id===S.user.id;});});}
   else if(S.tab==='club'&&S.admin){S.panel=await q(sb.from('bookings').select(SEL).eq('club_id',CLUB).eq('status','active').eq('day',S.panelDay));
+    var cd=S.panelDay;fx('club-ajustes',{club_id:CLUB,action:'caja',day:cd}).then(function(r){if(S.panelDay===cd){S.caja=r;if(S.tab==='club')render();}}).catch(function(){S.caja=null;});
     if(!S.cobros||S.cobros.stale){S.cobros={loading:true};fx('club-stripe',{club_id:CLUB,action:'estado'}).then(function(r){S.cobros=r||{};if(S.tab==='club')render();}).catch(function(e){S.cobros={error:errMsg(e)};if(S.tab==='club')render();});}}
 }
 async function myIds(from,to){var r=await q(sb.from('booking_players').select('booking_id,bookings!inner(day,status)').eq('user_id',S.user.id).gte('bookings.day',from).lte('bookings.day',to).eq('bookings.status','active'));
@@ -292,21 +298,34 @@ function vPerfil(){var me=S.me,opts='';for(var x=10;x<=70;x+=5){var v=(x/10).toF
   '<button class="btn btn-line btn-block" data-act="logout">Cerrar sesión</button>'+
   '<p class="muted small center" style="margin-top:18px">Versión de prueba: los pagos son de mentira. Para pagar usa la tarjeta 4242 4242 4242 4242, cualquier fecha futura y cualquier CVC.</p>';}
 
-function vClub(){var h='<h2 style="margin-top:4px">Panel del club</h2><p class="muted small" style="margin:4px 0 8px">Todas las reservas del día. Apunta las que te llegan por teléfono o bloquea pistas.</p>'+cobrosCard()+dayChips(S.panelDay,'panelDay');
+function vClub(){var h='<h2 style="margin-top:4px">Panel del club</h2><p class="muted small" style="margin:4px 0 8px">Todas las reservas del día. Apunta las que te llegan por teléfono o bloquea pistas.</p>'+cobrosCard()+
+    '<div class="row" style="gap:8px;margin:0 0 10px"><button class="btn btn-line btn-sm" style="flex:1" data-act="ajustes">Precios y horario</button><button class="btn btn-line btn-sm" style="flex:1" data-act="fijos">Reservas fijas</button></div>'+
+    dayChips(S.panelDay,'panelDay');
   var by={};S.panel.forEach(function(b){by[b.court_id+'|'+b.start_min]=b;});
   var total=S.panel.length,cap=S.courts.length*slotList().length;
   h+='<div class="card row between"><span><b style="font-family:var(--font-d);font-size:26px">'+total+'</b> <span class="muted">de '+cap+' horas ocupadas</span></span><span class="tag">'+esc(dayLong(S.panelDay))+'</span></div>';
+  h+=cajaCard();
   S.courts.forEach(function(ct){h+='<div class="card"><h3>'+esc(ct.name)+'</h3><div class="list" style="margin-top:8px">';
     slotList().forEach(function(m){var b=by[ct.id+'|'+m],past=isPast(S.panelDay,m),t='<b>'+hm(m)+'</b> ';
       if(b){var who;if(b.kind==='blocked')who='Bloqueada'+(b.label?': '+esc(b.label):'');
         else if(b.kind==='manual')who='Teléfono: '+esc(b.label||(b.booking_players[0]&&b.booking_players[0].guest_name)||'');
         else{var ow=b.booking_players.filter(function(p){return p.user_id===b.owner_id;})[0];who=esc(ow?pname(ow):'App')+' · '+(b.payment_state==='confirmed'?'<span class="paid">pagada</span>':'<span class="warnc">pagado '+paidCount(b)+'/'+ct.size+'</span>')+(b.is_open?' · abierto':'');}
+        if(b.fixed_id)who+=' <span class="tag fixtag">Fija</span>';
         h+='<div class="pl"><span>'+t+who+'</span>'+(past?'':'<button class="btn btn-danger btn-sm" data-act="askCancel" data-v="'+b.id+'">Cancelar</button>')+'</div>';}
       else if(past)h+='<div class="pl empty"><span>'+t+'Libre</span></div>';
       else h+='<div class="pl empty"><span>'+t+'Libre</span><span class="row"><button class="btn btn-line btn-sm" data-act="admin" data-k="manual" data-court="'+ct.id+'" data-v="'+m+'">Teléfono</button><button class="btn btn-line btn-sm" data-act="admin" data-k="blocked" data-court="'+ct.id+'" data-v="'+m+'">Bloquear</button></span></div>';});
     h+='</div></div>';});
   return h;}
 
+var WD=['','lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+function wdOf(day){var w=new Date(day+'T12:00:00Z').getUTCDay();return w===0?7:w;}
+function cajaCard(){var c=S.caja;if(!c)return '<div class="card muted small"><span class="spin"></span> Calculando la caja del día…</div>';
+  return '<div class="card caja"><b>Caja del día</b><div class="cajagrid">'+
+    '<div><span class="muted small">Pistas pagadas en la app</span><b>'+esc(c.pistas)+'</b><span class="muted small">'+c.pagos+' pago'+(c.pagos===1?'':'s')+' · comisión Revo 2 %: '+esc(c.comision)+'</span></div>'+
+    '<div><span class="muted small">A cobrar en el club</span><b>'+esc(c.mostrador)+'</b><span class="muted small">'+c.telefono+' reserva'+(c.telefono===1?'':'s')+' por teléfono</span></div></div>'+
+    (c.devuelto&&c.devuelto!=='0,00 €'?'<p class="muted small" style="margin:6px 0 0">Devuelto a jugadores este día: '+esc(c.devuelto)+'</p>':'')+'</div>';}
+function toHM(m){return hm(m);}
+function fromHM(v){var p=String(v||'').split(':');return (+p[0])*60+(+p[1]||0);}
 function cobrosCard(){var c=S.cobros;if(!c||c.loading)return '<div class="card muted small"><span class="spin"></span> Comprobando los cobros…</div>';
   if(c.error)return '<div class="card"><b>Cobros</b><p class="muted small" style="margin:4px 0 0">'+esc(c.error)+'</p></div>';
   if(c.listo===false)return '<div class="card"><b>Cobros sin configurar</b><p class="muted small" style="margin:4px 0 0">'+esc(c.motivo||'')+'</p></div>';
@@ -335,9 +354,25 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     h='<div class="row between"><h2>Clubes</h2><button class="btn btn-line btn-sm" data-act="close">Cerrar</button></div>'+
     '<div class="col" style="margin-top:12px"><button class="card clubcard on" data-act="close" aria-pressed="true"><span class="clubav">'+esc(cc.name.slice(0,2).toUpperCase())+'</span><span style="flex:1;text-align:left"><b>'+esc(cc.name)+'</b><br><span class="muted small">'+esc(cc.city)+' · '+S.courts.length+' pistas · '+hm(cc.open_min)+'–'+hm(sl[sl.length-1]+cc.slot_min)+'<br>Mañana '+euro(cc.price_morning)+' · tarde '+euro(cc.price_afternoon)+' por jugador</span></span><span class="small" style="color:var(--accent);font-weight:700">Actual</span></button>'+
     '<div class="card clubcard soon"><span class="clubav"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span style="flex:1"><b>Más clubes próximamente</b><br><span class="muted small">Pronto podrás reservar en otros clubes de la zona con tu misma cuenta y tu nivel.</span></span></div></div>';}
+  else if(s.type==='ajustes'){var c3=S.club;
+    h='<h2>Precios y horario</h2><p class="muted small" style="margin:6px 0 12px">Los cambios valen para las reservas nuevas. Las ya hechas no cambian de precio.</p>'+
+    '<form class="col" data-form="ajustes"><div class="row" style="gap:10px"><div class="field" style="flex:1"><label for="j-pm">Mañana (€/jugador)</label><input class="input" id="j-pm" name="pm" type="number" step="0.05" min="0" max="50" value="'+Number(c3.price_morning)+'" required></div>'+
+    '<div class="field" style="flex:1"><label for="j-pa">Tarde (€/jugador)</label><input class="input" id="j-pa" name="pa" type="number" step="0.05" min="0" max="50" value="'+Number(c3.price_afternoon)+'" required></div></div>'+
+    '<div class="field"><label for="j-cut">La tarde empieza a las</label><input class="input" id="j-cut" name="cut" type="time" step="900" value="'+toHM(c3.cut_min)+'" required></div>'+
+    '<div class="row" style="gap:10px"><div class="field" style="flex:1"><label for="j-open">Abre</label><input class="input" id="j-open" name="open" type="time" step="900" value="'+toHM(c3.open_min)+'" required></div>'+
+    '<div class="field" style="flex:1"><label for="j-close">Cierra</label><input class="input" id="j-close" name="close" type="time" step="900" value="'+toHM(c3.close_min)+'" required></div></div>'+
+    '<p class="muted small" style="margin:0">Cada reserva dura '+(c3.slot_min/60).toString().replace('.',',')+' h, empezando a la hora de apertura.</p>'+
+    '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Guardando…':'Guardar')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
+  else if(s.type==='fijos'){
+    h='<div class="row between"><h2>Reservas fijas</h2><button class="btn btn-line btn-sm" data-act="close">Cerrar</button></div><p class="muted small" style="margin:6px 0 12px">Se apuntan solas cada semana con 14 días de antelación. Para crear una, pulsa «Teléfono» o «Bloquear» en una hora libre y marca «Repetir cada semana».</p>';
+    if(!S.fijos)h+='<p class="muted"><span class="spin"></span> Cargando…</p>';
+    else if(!S.fijos.length)h+='<div class="empty-state" style="padding:20px 0">Aún no hay reservas fijas.</div>';
+    else{h+='<div class="list">';S.fijos.forEach(function(f){h+='<div class="pl"><span><b style="text-transform:capitalize">'+WD[f.weekday]+' '+hm(f.start_min)+'</b> · '+esc(court(f.court_id).name)+'<br><span class="muted small">'+(f.kind==='manual'?'Reserva: ':'Bloqueo: ')+esc(f.label||(f.kind==='manual'?'Sin nombre':'Sin motivo'))+(f.until?' · hasta el '+dfmt(f.until,{day:'numeric',month:'short'}):'')+'</span></span><button class="btn btn-danger btn-sm" data-act="fijoBorrar" data-v="'+f.id+'"'+(S.busy?' disabled':'')+'>Quitar</button></div>';});h+='</div>';}}
   else if(s.type==='admin'){var c2=court(s.court);
     h='<h2>'+(s.kind==='manual'?'Reserva por teléfono':'Bloquear pista')+'</h2><p class="muted" style="margin:6px 0 12px;text-transform:capitalize">'+esc(c2.name)+' · '+esc(dayLong(S.panelDay))+' · '+hm(s.start)+'</p>'+
     '<form class="col" data-form="admin"><div class="field"><label for="a-label">'+(s.kind==='manual'?'Nombre de quien reserva':'Motivo')+'</label><input class="input" id="a-label" name="label" maxlength="40" placeholder="'+(s.kind==='manual'?'Ej.: Paco':'Ej.: Mantenimiento')+'"></div>'+
+    '<label class="row card" style="margin:0"><input type="checkbox" name="repeat" style="width:20px;height:20px"> <span><b>Repetir cada '+WD[wdOf(S.panelDay)]+'</b><br><span class="muted small">Para grupos fijos o clases. Se apunta sola cada semana.</span></span></label>'+
+    '<div class="field"><label for="a-until">Hasta (opcional)</label><input class="input" id="a-until" name="until" type="date" min="'+S.panelDay+'"></div>'+
     '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(s.kind==='manual'?'Apuntar reserva':'Bloquear')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='cancel'){var lv=s.leave;
     h='<h2>'+(lv?'¿Salirte del partido?':'¿Cancelar la reserva?')+'</h2>'+
@@ -435,7 +470,7 @@ var A={
   authMode:function(el){S.authMode=el.dataset.v;render();},
   tab:function(el){S.tab=el.dataset.v;if(S.tab==='club'&&S.cobros)S.cobros.stale=true;S.sheet=null;stopPoll();render();refresh();window.scrollTo(0,0);},
   day:function(el){S.day=el.dataset.v;render();refresh();},
-  panelDay:function(el){S.panelDay=el.dataset.v;render();refresh();},
+  panelDay:function(el){S.panelDay=el.dataset.v;S.caja=null;render();refresh();},
   book:function(el){S.busy=false;S.sheet={type:'book',court:el.dataset.court,start:+el.dataset.v,open:false};renderSheet();},
   toggleOpen:function(el){S.sheet.open=el.checked;renderSheet();},
   match:function(el){if(el.dataset.v)openMatch(el.dataset.v);else{S.sheet=null;renderSheet();}},
@@ -457,6 +492,17 @@ var A={
     S.busy=true;renderSheet();
     try{var res=await fx('pago-cancelar',{booking_id:s.id,action:s.leave?'leave':'cancel'});
       toast((s.leave?'Te has salido del partido':'Reserva cancelada')+(res&&res.refund&&res.refund!=='0,00 €'?' · te devolvemos '+res.refund:''));S.sheet=null;stopPoll();}
+    catch(e){toast(errMsg(e),true);}
+    S.busy=false;renderSheet();refresh();},
+  ajustes:function(){S.busy=false;S.sheet={type:'ajustes'};renderSheet();},
+  fijos:async function(){S.sheet={type:'fijos'};S.fijos=null;renderSheet();
+    try{var r=await fx('club-ajustes',{club_id:CLUB,action:'fijos'});S.fijos=r.fijos||[];}catch(e){S.fijos=[];toast(errMsg(e),true);}
+    if(S.sheet&&S.sheet.type==='fijos')renderSheet();},
+  fijoBorrar:async function(el){var f=(S.fijos||[]).filter(function(x){return x.id===el.dataset.v;})[0];
+    if(f&&!el.dataset.sure){el.dataset.sure='1';el.textContent='¿Seguro?';return;}
+    S.busy=true;renderSheet();
+    try{var r=await fx('club-ajustes',{club_id:CLUB,action:'fijo_borrar',id:el.dataset.v});toast('Reserva fija quitada'+(r.quitadas?' ('+r.quitadas+' próximas anuladas)':''));
+      S.fijos=S.fijos.filter(function(x){return x.id!==el.dataset.v;});}
     catch(e){toast(errMsg(e),true);}
     S.busy=false;renderSheet();refresh();},
   admin:function(el){S.sheet={type:'admin',kind:el.dataset.k,court:el.dataset.court,start:+el.dataset.v};renderSheet();var i=document.getElementById('a-label');if(i)i.focus();},
@@ -485,8 +531,20 @@ var FORMS={
     if(!r.ok){renderSheet();refresh();return;}
     await goPay(r.data,kind);},
   admin:async function(f){var s=S.sheet,d=new FormData(f);
+    if(d.get('repeat')){S.busy=true;renderSheet();
+      try{var fr=await fx('club-ajustes',{club_id:CLUB,action:'fijo_crear',court_id:s.court,weekday:wdOf(S.panelDay),start_min:s.start,kind:s.kind,label:String(d.get('label')||'').trim(),until:String(d.get('until')||'')||null});
+        S.busy=false;S.sheet=null;S.fijos=null;
+        toast('Fija cada '+WD[wdOf(S.panelDay)]+': '+fr.creadas.length+' apuntada'+(fr.creadas.length===1?'':'s')+(fr.ocupadas.length?' · ocupado el '+fr.ocupadas.map(function(x){return dfmt(x,{day:'numeric',month:'short'});}).join(', '):''),fr.ocupadas.length>0);}
+      catch(e){S.busy=false;toast(errMsg(e),true);}
+      renderSheet();refresh();return;}
     var r=await rpc('admin_block_slot',{p_court:s.court,p_day:S.panelDay,p_start:s.start,p_kind:s.kind,p_label:String(d.get('label')||'').trim()||null},s.kind==='manual'?'Reserva apuntada':'Pista bloqueada');
     if(r.ok)S.sheet=null;renderSheet();refresh();},
+  ajustes:async function(f){var d=new FormData(f);
+    var body={club_id:CLUB,action:'guardar',price_morning:Number(d.get('pm')),price_afternoon:Number(d.get('pa')),cut_min:fromHM(d.get('cut')),open_min:fromHM(d.get('open')),close_min:fromHM(d.get('close'))};
+    S.busy=true;renderSheet();
+    try{await fx('club-ajustes',body);S.club=await q(sb.from('clubs').select('*').eq('id',CLUB).single());S.busy=false;S.sheet=null;toast('Precios y horario guardados');}
+    catch(e){S.busy=false;toast(errMsg(e),true);}
+    renderSheet();refresh();},
   chat:async function(f){var inp=f.querySelector('input'),body=inp.value.trim();if(!body)return;inp.value='';
     var r=await sb.from('match_messages').insert({booking_id:S.match.id,user_id:S.user.id,body:body});
     if(r.error){toast(errMsg(r.error),true);inp.value=body;return;}
