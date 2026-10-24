@@ -301,7 +301,7 @@ async function loadBase(){
   var n=nowM().day;if(!S.day)S.day=n;if(!S.panelDay)S.panelDay=n;
 }
 var SEL='id,court_id,day,start_min,kind,label,is_open,fixed_id,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,pay_deadline,booking_players(user_id,guest_name,paid_at,profiles(name,level))';
-var FEE=0.35;
+var FEE=0.40;
 /* Llama a una función del servidor (pagos) y devuelve su respuesta o un error legible */
 async function fx(name,body){var r=await sb.functions.invoke(name,{body:body});
   if(r.error){var msg=r.error.message||'Algo ha fallado';try{var j=await r.error.context.json();if(j&&j.error)msg=j.error;}catch(e){}throw new Error(msg);}
@@ -508,7 +508,7 @@ var WD=['','lunes','martes','miércoles','jueves','viernes','sábado','domingo']
 function wdOf(day){var w=new Date(day+'T12:00:00Z').getUTCDay();return w===0?7:w;}
 function cajaCard(){var c=S.caja;if(!c)return '<div class="card muted small"><span class="spin"></span> Calculando la caja del día…</div>';
   return '<div class="card caja"><b>Caja del día</b><div class="cajagrid">'+
-    '<div><span class="muted small">Pistas pagadas en la app</span><b>'+esc(c.pistas)+'</b><span class="muted small">'+c.pagos+' pago'+(c.pagos===1?'':'s')+' · comisión Revo 2 %: '+esc(c.comision)+'</span></div>'+
+    '<div><span class="muted small">Pistas pagadas en la app</span><b>'+esc(c.pistas)+'</b><span class="muted small">'+c.pagos+' pago'+(c.pagos===1?'':'s')+' · llegan enteros al club</span></div>'+
     '<div><span class="muted small">A cobrar en el club</span><b>'+esc(c.mostrador)+'</b><span class="muted small">'+c.telefono+' reserva'+(c.telefono===1?'':'s')+' por teléfono</span></div></div>'+
     (c.devuelto&&c.devuelto!=='0,00 €'?'<p class="muted small" style="margin:6px 0 0">Devuelto a jugadores este día: '+esc(c.devuelto)+'</p>':'')+'</div>';}
 function toHM(m){return hm(m);}
