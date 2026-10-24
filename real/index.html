@@ -35,6 +35,61 @@ button{cursor:pointer}
 .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:#14223D;color:var(--accent)}
 .tag.lime{background:#22300A;color:var(--lime)}
 .tag.warn{background:#332708;color:var(--warn)}
+/* ===== Pantallas grandes (ordenador, tablet en horizontal) ===== */
+.courts,.cardgrid{display:block}
+@media (min-width:900px){
+  html body #app{max-width:1240px;padding:0 36px 48px 132px}
+  html body .tabs{top:0;bottom:0;right:auto;width:96px;flex-direction:column;justify-content:flex-start;border-top:0;border-right:1px solid var(--line);padding:22px 8px}
+  html body .tabs div{flex-direction:column;gap:6px;max-width:none}
+  html body .tabs button{flex:none;padding:12px 4px;font-size:12px}
+  html body .tabs button.on{background:#141D2B}
+  html body .sheet-bg{align-items:center}
+  html body .sheet{border-radius:20px;max-width:560px;max-height:86vh;border:1px solid var(--line)}
+  html body .toast{bottom:28px}
+  .courts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:6px}
+  .courts .card{margin:0}
+  .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-top:8px}
+  .cardgrid .card{margin:0;height:100%}
+  html body .days{flex-wrap:wrap}
+}
+.clubhead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:10px}
+.clubwide{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+.clubside .card:first-child{margin-top:0}
+.kpi b{display:block;font-family:var(--font-d);font-size:34px;line-height:1}
+.kpi b small{font-size:18px;color:var(--muted)}
+.bar{height:6px;border-radius:99px;background:var(--surface2);margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--lime);border-radius:99px}
+.board{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.board table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:640px}
+.board thead th{position:sticky;top:0;background:#0F1621;z-index:1;padding:12px 8px;text-align:left;font-size:14px;border-bottom:1px solid var(--line)}
+.board thead th small{display:block;color:var(--muted);font-weight:600;font-size:11px;margin-top:2px}
+.board th.bh{width:74px;text-align:left;padding:8px 10px;font-size:14px;vertical-align:top;border-right:1px solid var(--line)}
+.board tbody th.bh small{display:block;color:var(--muted);font-size:11px;font-weight:600}
+.board td.bc{padding:4px;height:64px;vertical-align:stretch;border-bottom:1px solid #1A2331}
+.board tbody tr:last-child td,.board tbody tr:last-child th{border-bottom:0}
+.bk{display:flex;flex-direction:column;justify-content:center;gap:2px;width:100%;height:100%;min-height:56px;border-radius:10px;padding:6px 10px;text-align:left;border:1px solid transparent;color:var(--ink);background:transparent;font:inherit;cursor:pointer;overflow:hidden}
+div.bk{cursor:default}
+.bk b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc.app .bk{background:#14254A;border-color:#2E4A8C}
+.bc.app.pend .bk{background:#2C2410;border-color:#6B5414}
+.bc.tel .bk{background:#1E2A0C;border-color:#4C5E14}
+.bc.blk .bk{background:repeating-linear-gradient(135deg,#1A2230,#1A2230 8px,#151C27 8px,#151C27 16px);border-color:#2A3445}
+.bc.was .bk{opacity:.5}
+.bk:hover{filter:brightness(1.18)}
+.bc.past{background:repeating-linear-gradient(135deg,transparent,transparent 6px,rgba(255,255,255,.02) 6px,rgba(255,255,255,.02) 12px)}
+.bfree{display:flex;gap:4px;height:100%;min-height:56px;position:relative}
+.bfree button{opacity:0;transition:opacity .12s}
+.bfree::before{content:'Libre';position:absolute;inset:0;display:flex;align-items:center;padding-left:10px;font-size:12px;color:#3E4C60;font-weight:600;pointer-events:none;transition:opacity .12s}
+.bc.free:hover .bfree button,.bfree:focus-within button{opacity:1}
+.bc.free:hover .bfree::before,.bfree:focus-within::before{opacity:0}
+@media (hover:none){.bfree button{opacity:1}.bfree::before{display:none}}
+.bfree button{flex:1;border:1px dashed #3A4A5E;background:transparent;color:var(--muted);border-radius:10px;font-size:11.5px;font-weight:700;cursor:pointer}
+.bfree button:first-child{color:var(--lime);border-color:#55631F}
+.bfree button:hover{background:#141D2B}
+.legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:12px;margin:10px 2px 0}
+.lg{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:-8px;vertical-align:-1px;border:1px solid transparent}
+.lg.app{background:#14254A;border-color:#2E4A8C}.lg.pend{background:#2C2410;border-color:#6B5414}.lg.tel{background:#1E2A0C;border-color:#4C5E14}.lg.blk{background:#1A2230;border-color:#2A3445}.lg.free{border:1px dashed #55631F}
 .fixtag{background:#1F2A44;color:var(--accent);font-size:10px;padding:2px 6px;margin-left:4px;vertical-align:1px}
 .pushcard{border-color:#3B4A12;background:linear-gradient(180deg,rgba(212,240,74,.07),transparent)}
 .contact{display:flex;flex-direction:column;gap:12px}
@@ -261,6 +316,7 @@ function vReservar(){
   h+=dayChips(S.day,'day');
   h+='<p style="margin:2px 0 0;font-weight:700;text-transform:capitalize">'+esc(dayLong(S.day))+'</p>';
   var occ={};S.occ.forEach(function(o){occ[o.court_id+'|'+o.start_min]=o;});
+  h+='<div class="courts">';
   S.courts.forEach(function(ct){
     h+='<div class="card"><div class="row between"><div><h3>'+esc(ct.name)+'</h3><span class="muted small">'+esc(ct.description||'')+'</span></div></div><div class="slots">';
     slotList().forEach(function(m){var o=occ[ct.id+'|'+m],past=isPast(S.day,m);
@@ -271,7 +327,7 @@ function vReservar(){
       else if(past)h+='<div class="slot past">'+hm(m)+'<small>Pasada</small></div>';
       else h+='<button class="slot free" data-act="book" data-court="'+ct.id+'" data-v="'+m+'">'+hm(m)+'<small>Libre</small></button>';});
     h+='</div></div>';});
-  return h;}
+  return h+'</div>';}
 
 function matchCard(b){var ct=court(b.court_id),n=b.booking_players.length,me=b.booking_players.some(function(p){return p.user_id===S.user.id;});
   var owner=b.booking_players.filter(function(p){return p.user_id===b.owner_id;})[0];
@@ -286,11 +342,11 @@ function matchCard(b){var ct=court(b.court_id),n=b.booking_players.length,me=b.b
 function vPartidos(){var h='<h2 style="margin-top:4px">Partidos abiertos</h2><p class="muted small" style="margin:4px 0 0">Partidos del Olimpo a los que les falta gente. Apúntate y habla con el resto en el chat.</p>';
   var list=S.open.filter(function(b){return b.booking_players.length<court(b.court_id).size||b.booking_players.some(function(p){return p.user_id===S.user.id;});});
   if(!list.length)return h+'<div class="empty-state">No hay partidos abiertos ahora mismo.<br><br><button class="btn" data-act="tab" data-v="reservar">Reserva y abre uno</button></div>';
-  return h+list.map(matchCard).join('');}
+  return h+'<div class="cardgrid">'+list.map(matchCard).join('')+'</div>';}
 
 function vMias(){var h='<h2 style="margin-top:4px">Mis reservas</h2>'+pushCard(true);
   if(!S.mine.length)return h+'<div class="empty-state">No tienes reservas próximas.<br><br><button class="btn" data-act="tab" data-v="reservar">Reservar pista</button></div>';
-  return h+S.mine.map(matchCard).join('');}
+  return h+'<div class="cardgrid">'+S.mine.map(matchCard).join('')+'</div>';}
 
 function vPerfil(){var me=S.me,opts='';for(var x=10;x<=70;x+=5){var v=(x/10).toFixed(1);opts+='<option value="'+v+'"'+(Number(me.level).toFixed(1)===v?' selected':'')+'>'+v.replace('.',',')+'</option>';}
   return '<h2 style="margin-top:4px">Tu perfil</h2>'+
@@ -343,7 +399,37 @@ function contactCard(){var c=S.club,tel=c.contact_phone,mail=c.contact_email,h='
   else h+='<p class="muted small" style="margin:6px 0 0">El club aún no ha añadido su teléfono. Pregunta en recepción.</p>';
   h+='</div><div><span class="muted small">Revo · problemas con la app, la cuenta o un pago online</span><div style="margin-top:6px"><a class="btn btn-line btn-sm" href="mailto:'+REVO_EMAIL+'?subject='+encodeURIComponent('Ayuda con Revo')+'">'+REVO_EMAIL+'</a></div></div></div></div>';
   return h;}
-function vClub(){var h='<h2 style="margin-top:4px">Panel del club</h2><p class="muted small" style="margin:4px 0 8px">Todas las reservas del día. Apunta las que te llegan por teléfono o bloquea pistas.</p>'+cobrosCard()+
+/* ===== Ordenador: cuadrante del club (todas las pistas y horas a la vez) ===== */
+var WIDE_MQ=window.matchMedia?window.matchMedia('(min-width: 900px)'):null;
+function isWide(){return !!(WIDE_MQ&&WIDE_MQ.matches);}
+if(WIDE_MQ){var onMq=function(){if(S.user&&S.club)render();};if(WIDE_MQ.addEventListener)WIDE_MQ.addEventListener('change',onMq);else if(WIDE_MQ.addListener)WIDE_MQ.addListener(onMq);}
+function boardCell(b,ct,m,past){
+  if(b){var cls,title,sub='',act;
+    if(b.kind==='blocked'){cls='blk';title='Bloqueada';sub=esc(b.label||'');}
+    else if(b.kind==='manual'){cls='tel';title='📞 '+esc(b.label||(b.booking_players[0]&&b.booking_players[0].guest_name)||'Teléfono');sub='Cobrar en el club';}
+    else{var ow=b.booking_players.filter(function(p){return p.user_id===b.owner_id;})[0],pend=b.payment_state==='pending';
+      cls='app'+(pend?' pend':'');title=esc(ow?pname(ow):'App');
+      sub=(pend?'<span class="warnc">Pagado '+paidCount(b)+'/'+ct.size+'</span>':'<span class="paid">Pagada</span>')+' · '+b.booking_players.length+'/'+ct.size+(b.is_open?' · abierto':'');}
+    if(b.fixed_id)sub='<span class="tag fixtag" style="margin:0 4px 0 0">Fija</span>'+sub;
+    act=b.kind==='app'?'data-act="match" data-v="'+b.id+'"':(past?'':'data-act="askCancel" data-v="'+b.id+'"');
+    return '<td class="bc '+cls+(past?' was':'')+'">'+(act?'<button class="bk" '+act+' title="'+(b.kind==='app'?'Ver partido':'Cancelar')+'">':'<div class="bk">')+'<b>'+title+'</b><span>'+sub+'</span>'+(act?'</button>':'</div>')+'</td>';}
+  if(past)return '<td class="bc past"></td>';
+  return '<td class="bc free"><div class="bfree"><button data-act="admin" data-k="manual" data-court="'+ct.id+'" data-v="'+m+'">+ Teléfono</button><button data-act="admin" data-k="blocked" data-court="'+ct.id+'" data-v="'+m+'">Bloquear</button></div></td>';}
+function clubBoard(by){var h='<div class="board"><table><thead><tr><th class="bh"></th>';
+  S.courts.forEach(function(ct){h+='<th>'+esc(ct.name)+'<small>'+(ct.size===2?'Individual':'Dobles')+'</small></th>';});
+  h+='</tr></thead><tbody>';
+  slotList().forEach(function(m){h+='<tr><th class="bh">'+hm(m)+'<small>'+hm(m+S.club.slot_min)+'</small></th>';
+    S.courts.forEach(function(ct){h+=boardCell(by[ct.id+'|'+m],ct,m,isPast(S.panelDay,m));});h+='</tr>';});
+  return h+'</tbody></table></div><div class="legend"><span class="lg app"></span>App <span class="lg pend"></span>Falta pagar <span class="lg tel"></span>Teléfono <span class="lg blk"></span>Bloqueada <span class="lg free"></span>Libre</div>';}
+function vClubWide(by,total,cap){
+  var h='<div class="clubhead"><div><h2 style="margin:4px 0 0">Panel del club</h2><p class="muted small" style="margin:4px 0 0">Haz clic en una hora libre para apuntar una reserva por teléfono o bloquear la pista.</p></div>'+
+    '<div class="row" style="gap:8px"><button class="btn btn-line btn-sm" data-act="ajustes">Precios, horario y contacto</button><button class="btn btn-line btn-sm" data-act="fijos">Reservas fijas</button></div></div>'+
+    dayChips(S.panelDay,'panelDay');
+  h+='<div class="clubwide"><div class="clubmain"><p style="margin:2px 0 8px;font-weight:700;text-transform:capitalize">'+esc(dayLong(S.panelDay))+'</p>'+clubBoard(by)+'</div>';
+  h+='<aside class="clubside"><div class="card kpi"><b>'+total+'<small> / '+cap+'</small></b><span class="muted small">horas ocupadas · '+(cap?Math.round(total*100/cap):0)+' %</span><div class="bar"><i style="width:'+(cap?Math.round(total*100/cap):0)+'%"></i></div></div>'+cajaCard()+cobrosCard()+'</aside></div>';
+  return h;}
+function vClub(){if(isWide()){var by0={};S.panel.forEach(function(b){by0[b.court_id+'|'+b.start_min]=b;});return vClubWide(by0,S.panel.length,S.courts.length*slotList().length);}
+  var h='<h2 style="margin-top:4px">Panel del club</h2><p class="muted small" style="margin:4px 0 8px">Todas las reservas del día. Apunta las que te llegan por teléfono o bloquea pistas.</p>'+cobrosCard()+
     '<div class="row" style="gap:8px;margin:0 0 10px"><button class="btn btn-line btn-sm" style="flex:1" data-act="ajustes">Precios, horario y contacto</button><button class="btn btn-line btn-sm" style="flex:1" data-act="fijos">Reservas fijas</button></div>'+
     dayChips(S.panelDay,'panelDay');
   var by={};S.panel.forEach(function(b){by[b.court_id+'|'+b.start_min]=b;});
