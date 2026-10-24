@@ -88,6 +88,48 @@ p{margin:0}
 .phone{width:min(300px,78vw);aspect-ratio:390/844;padding:10px;border-radius:46px;background:#05070B;box-shadow:0 0 0 2px #2A3954,0 40px 80px rgba(3,8,24,.5)}
 .phone img{width:100%;height:100%;object-fit:cover;object-position:top;border-radius:36px}
 
+/* Móvil de la portada que enseña la app sola */
+.hero-demo{justify-self:center;display:flex;flex-direction:column;align-items:center;gap:22px}
+.shots{position:relative;width:100%;height:100%}
+.shots img{position:absolute;inset:0;opacity:0;transition:opacity .6s ease,transform .6s ease;transform:scale(1.02)}
+.shots img.on{opacity:1;transform:none}
+.hero-steps{list-style:none;margin:0;padding:0;display:flex;gap:4px;flex-wrap:nowrap;justify-content:center}
+@media (max-width:520px){.hero-steps{flex-wrap:wrap;max-width:92vw}}
+.hero-steps button{display:flex;align-items:center;gap:6px;border:0;background:rgba(8,12,18,.28);color:var(--suave);font:700 13px/1 var(--font-b);white-space:nowrap;padding:7px 10px 7px 7px;border-radius:999px;cursor:pointer;transition:background .2s,color .2s}
+.hero-steps b{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(238,242,247,.16);font-size:12px}
+.hero-steps li.on button{background:var(--noche);color:var(--linea)}
+.hero-steps li.on b{background:var(--lima);color:var(--tinta)}
+
+/* Hoy en el club, en directo */
+.live{background:var(--noche);padding:72px 0 0}
+.live-card{background:var(--noche-2);border:1px solid var(--malla);border-radius:28px;padding:34px 36px;box-shadow:0 30px 60px rgba(0,0,0,.25)}
+.live-tag{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:15px;color:var(--lima);letter-spacing:.3px;text-transform:uppercase}
+.pulse{width:10px;height:10px;border-radius:50%;background:var(--lima);box-shadow:0 0 0 0 rgba(212,240,74,.6)}
+@media (prefers-reduced-motion:no-preference){.pulse{animation:pulso 1.8s infinite}@keyframes pulso{70%{box-shadow:0 0 0 12px rgba(212,240,74,0)}100%{box-shadow:0 0 0 0 rgba(212,240,74,0)}}}
+.live-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:40px;align-items:center;margin-top:16px}
+.live-info h2{margin:0;font-size:clamp(34px,4.4vw,54px);line-height:1}
+.live-n{color:var(--lima);font-variant-numeric:tabular-nums}
+.live-sub{color:var(--gris);font-size:18px;margin:14px 0 20px}
+.live-seg{display:inline-flex;background:var(--noche);border:1px solid var(--malla);border-radius:999px;padding:4px}
+.live-seg button{border:0;background:transparent;color:var(--gris);font:700 15px/1 var(--font-b);padding:10px 20px;border-radius:999px;cursor:pointer}
+.live-seg button[aria-pressed=true]{background:var(--lima);color:var(--tinta)}
+.live-open{display:flex;align-items:center;gap:10px;margin-top:22px;color:var(--linea);font-weight:700;text-decoration:none;font-size:16px}
+.live-open:hover{color:var(--lima)}
+.live-open i{font-style:normal;background:#1C2B4A;color:#8FB0FF;border-radius:999px;padding:4px 10px;font-size:13px}
+.live-hours{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+.hr{display:flex;flex-direction:column;gap:4px;padding:14px 14px 12px;border-radius:16px;border:1px solid #3B4A16;background:rgba(212,240,74,.06);color:var(--lima);text-decoration:none;font:700 22px/1 var(--font-d);transition:transform .15s,background .15s}
+.hr small{font:600 13px/1.2 var(--font-b);color:var(--gris)}
+a.hr:hover{transform:translateY(-2px);background:rgba(212,240,74,.13)}
+.hr.full{border-color:var(--malla);background:transparent;color:#4A576B}
+.hr.full small{color:#4A576B}
+.live-empty{grid-column:1/-1;color:var(--gris);font-size:17px;padding:18px 0}
+
+/* Aparecer al bajar */
+@media (prefers-reduced-motion:no-preference){
+  .js .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+  .js .reveal.in{opacity:1;transform:none}
+}
+
 /* Así se usa */
 .use{padding:120px 0 40px}
 .use-head{display:flex;flex-direction:column;gap:18px;margin-bottom:64px}
@@ -191,6 +233,11 @@ dialog video{width:100%;border-radius:22px;background:#000}
   .hero{padding:112px 0 72px}
   .hero-grid,.soon-grid,.install-card,.clubs-grid,.faq-grid{grid-template-columns:minmax(0,1fr)}
   .hero-phone{transform:rotate(2deg)}
+  .web-alt{display:none}
+  .live{padding-top:48px}
+  .live-card{padding:26px 20px;border-radius:22px}
+  .live-grid{grid-template-columns:minmax(0,1fr);gap:24px}
+  .live-hours{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
   .ball{display:none}
   .screens{grid-template-columns:minmax(0,1fr);gap:72px}
   .screen:nth-child(2){margin-top:0}
@@ -238,8 +285,41 @@ dialog video{width:100%;border-radius:22px;background:#000}
         </div>
         <p class="web-alt">¿Estás en el ordenador? <a href="real/">Reserva desde el navegador →</a> Sin instalar nada, con la misma cuenta.</p>
       </div>
-      <div class="phone hero-phone">
-        <img src="web/img/app-reservar.webp" width="390" height="844" alt="Pantalla de reservas de Revo: las pistas del Olimpo con las horas libres y ocupadas de mañana">
+      <div class="hero-demo">
+        <div class="phone hero-phone">
+          <div class="shots" id="heroShots" aria-live="polite">
+            <img class="on" src="web/img/paso-1.webp" width="390" height="844" alt="Paso 1: eliges día y hora libre en las pistas del Olimpo">
+            <img src="web/img/paso-2.webp" width="390" height="844" loading="lazy" alt="Paso 2: eliges si pagas tu parte o la pista entera">
+            <img src="web/img/paso-3.webp" width="390" height="844" loading="lazy" alt="Paso 3: el partido abierto se completa con gente del club, con cuenta atrás">
+            <img src="web/img/paso-4.webp" width="390" height="844" loading="lazy" alt="Paso 4: reserva confirmada con los cuatro jugadores pagados">
+          </div>
+        </div>
+        <ol class="hero-steps" id="heroSteps">
+          <li class="on"><button type="button" data-i="0"><b>1</b>Elige hora</button></li>
+          <li><button type="button" data-i="1"><b>2</b>Paga tu parte</button></li>
+          <li><button type="button" data-i="2"><b>3</b>Se completa</button></li>
+          <li><button type="button" data-i="3"><b>4</b>¡A jugar!</button></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="live" id="hoy" aria-labelledby="live-t" hidden>
+    <div class="wrap">
+      <div class="live-card">
+        <div class="live-tag"><span class="pulse" aria-hidden="true"></span>En directo · Olimpo, Cabra</div>
+        <div class="live-grid">
+          <div class="live-info">
+            <h2 id="live-t"><span class="live-n" id="liveN">0</span> <span id="liveWhat">horas libres hoy</span></h2>
+            <p class="live-sub" id="liveSub">Toca una hora y resérvala en un momento.</p>
+            <div class="live-seg" role="group" aria-label="Elegir día">
+              <button type="button" data-d="0" aria-pressed="true">Hoy</button>
+              <button type="button" data-d="1" aria-pressed="false">Mañana</button>
+            </div>
+            <a class="live-open" id="liveOpen" href="real/?tab=partidos" hidden></a>
+          </div>
+          <div class="live-hours" id="liveHours" aria-label="Horas libres"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -379,6 +459,60 @@ dialog video{width:100%;border-radius:22px;background:#000}
 
 <script>
 (function(){
+  document.documentElement.classList.add('js');
+  var RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Móvil de la portada: pasa solo por las pantallas */
+  var shots=[].slice.call(document.querySelectorAll('#heroShots img')),steps=[].slice.call(document.querySelectorAll('#heroSteps li')),cur=0,timer=null;
+  function show(i){cur=i;shots.forEach(function(im,k){im.classList.toggle('on',k===i);});steps.forEach(function(li,k){li.classList.toggle('on',k===i);});}
+  function play(){clearInterval(timer);if(!RM)timer=setInterval(function(){show((cur+1)%shots.length);},3400);}
+  steps.forEach(function(li){li.querySelector('button').addEventListener('click',function(){show(+this.dataset.i);play();});});
+  document.addEventListener('visibilitychange',function(){if(document.hidden)clearInterval(timer);else play();});
+  play();
+
+  /* Aparecer al bajar */
+  var rv=document.querySelectorAll('.use-head,.screen,.soon-grid>div:first-child,.soon-list li,.install-card,.clubs-grid>*,.faq-grid>*,.live-card');
+  if('IntersectionObserver' in window&&!RM){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -8% 0px'});
+    rv.forEach(function(el,i){el.classList.add('reveal');el.style.transitionDelay=(el.matches('.soon-list li,.screen')?((i%4)*90)+'ms':'0ms');io.observe(el);});
+  }
+
+  /* Hoy en el Olimpo, en directo (solo se ve si una hora está libre u ocupada, nunca quién reserva) */
+  var SBURL='https://ediueyqmkrboxvmisjmr.supabase.co/rest/v1/',SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkaXVleXFta3Jib3h2bWlzam1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MTM1NzAsImV4cCI6MjEwNzk4OTU3MH0.5tLy3iUSY2U9lKO5n9PlOdWG6ExdBKlIIzOrvjf-w4g';
+  var H={apikey:SBKEY,Authorization:'Bearer '+SBKEY,'Content-Type':'application/json'};
+  function madrid(){var p={};new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).forEach(function(x){p[x.type]=x.value;});return {day:p.year+'-'+p.month+'-'+p.day,min:(+p.hour)*60+(+p.minute)};}
+  function addD(d,n){var x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);}
+  function hm(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+  function eur(x){return Number(x).toFixed(2).replace('.',',')+' €';}
+  var live={dayIx:0},sec=document.getElementById('hoy');
+  function countUp(el,to){if(RM){el.textContent=to;return;}var from=+el.textContent||0,t0=null;function f(t){if(!t0)t0=t;var k=Math.min(1,(t-t0)/700);el.textContent=Math.round(from+(to-from)*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f);}requestAnimationFrame(f);}
+  function draw(){var now=madrid(),day=addD(now.day,live.dayIx),c=live.club,occ={},open=0;
+    live.occ.forEach(function(o){if(o.day!==day)return;occ[o.start_min]=(occ[o.start_min]||0)+1;});
+    live.occ.forEach(function(o){if(o.is_open&&o.players<o.size&&(o.day>now.day||o.start_min>now.min))open++;});
+    var h='',freeHours=0,next=null,nC=live.courts.length;
+    for(var m=c.open_min;m+c.slot_min<=c.close_min;m+=c.slot_min){
+      if(live.dayIx===0&&m<=now.min)continue;
+      var free=nC-(occ[m]||0),price=m<c.cut_min?c.price_morning:c.price_afternoon;
+      if(free>0){freeHours+=free;if(next===null)next=m;
+        h+='<a class="hr" href="real/?d='+day+'&h='+m+'">'+hm(m)+'<small>'+free+(free===1?' pista':' pistas')+' · '+eur(price)+'</small></a>';}
+      else h+='<span class="hr full">'+hm(m)+'<small>Completo</small></span>';}
+    if(!h)h='<p class="live-empty">Por hoy ya no quedan horas. Mira mañana.</p>';
+    document.getElementById('liveHours').innerHTML=h;
+    countUp(document.getElementById('liveN'),freeHours);
+    document.getElementById('liveWhat').textContent=(freeHours===1?'hora libre ':'horas libres ')+(live.dayIx===0?'hoy':'mañana');
+    document.getElementById('liveSub').textContent=next===null?'Todo reservado. ¡Así da gusto!':'La primera, a las '+hm(next)+'. Toca una hora y resérvala en un momento.';
+    var lo=document.getElementById('liveOpen');
+    if(open>0){lo.hidden=false;lo.innerHTML='<i>'+open+'</i>'+(open===1?'partido abierto busca jugadores':'partidos abiertos buscan jugadores')+' →';}else lo.hidden=true;}
+  [].forEach.call(document.querySelectorAll('.live-seg button'),function(b){b.addEventListener('click',function(){live.dayIx=+b.dataset.d;[].forEach.call(document.querySelectorAll('.live-seg button'),function(x){x.setAttribute('aria-pressed',String(x===b));});draw();});});
+  function loadLive(){var n=madrid();
+    Promise.all([
+      fetch(SBURL+'clubs?id=eq.olimpo&select=open_min,close_min,cut_min,slot_min,price_morning,price_afternoon',{headers:H}).then(function(r){if(!r.ok)throw 0;return r.json();}),
+      fetch(SBURL+'courts?club_id=eq.olimpo&active=eq.true&select=id',{headers:H}).then(function(r){if(!r.ok)throw 0;return r.json();}),
+      fetch(SBURL+'rpc/occupied_slots_v2',{method:'POST',headers:H,body:JSON.stringify({p_club:'olimpo',p_from:n.day,p_to:addD(n.day,13)})}).then(function(r){if(!r.ok)throw 0;return r.json();})
+    ]).then(function(r){if(!r[0][0]||!r[1].length)return;live.club=r[0][0];live.courts=r[1];live.occ=r[2];sec.hidden=false;draw();})
+      .catch(function(){/* sin conexión: la sección sigue oculta */});}
+  loadLive();setInterval(function(){if(!document.hidden&&live.club)loadLive();},60000);
+
   /* Pasos según el móvil */
   var ios=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   var btns=document.querySelectorAll('[data-os]');

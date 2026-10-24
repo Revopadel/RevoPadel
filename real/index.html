@@ -721,6 +721,16 @@ async function setUser(u){var uid=(u&&u.id)||null;
   S.loading=false;render();
   var m=/^#p=([0-9a-f-]{36})$/.exec(location.hash);if(m){history.replaceState(null,'',location.pathname);openMatch(m[1]);}
   var sp=new URLSearchParams(location.search),pg=sp.get('pago'),pb=sp.get('b'),stv=sp.get('stripe');
+  /* Enlaces desde la web: ?d=AAAA-MM-DD&h=minutos abre esa hora para reservar; ?tab=partidos abre los partidos */
+  var dl=sp.get('d'),dh=sp.get('h'),dt=sp.get('tab');
+  if((dl&&/^\d{4}-\d{2}-\d{2}$/.test(dl))||dt){history.replaceState(null,'',location.pathname);
+    if(dt&&['partidos','mias','perfil','reservar'].indexOf(dt)>=0&&!dl){S.tab=dt;render();await refresh();}
+    else if(dl&&dl>=nowM().day&&dl<=addDays(nowM().day,14)){S.tab='reservar';S.day=dl;await refresh();
+      var hm0=parseInt(dh,10);
+      if(!isNaN(hm0)&&!isPast(dl,hm0)){var taken={};S.occ.forEach(function(o){taken[o.court_id+'|'+o.start_min]=1;});
+        var freeC=S.courts.filter(function(c){return !taken[c.id+'|'+hm0];})[0];
+        if(freeC){S.sheet={type:'book',court:freeC.id,start:hm0,open:false};renderSheet();}
+        else toast('Esa hora ya se ha reservado. Elige otra.',true);}}}
   if(pg&&/^[0-9a-f-]{36}$/.test(pb||'')){history.replaceState(null,'',location.pathname);
     if(pg==='ok'){toast('Pago recibido. Lo estamos confirmando…');openMatch(pb);
       var tries=0;(async function chk(){tries++;var r=null;try{r=await fx('pago-verificar',{booking_id:pb});}catch(e){}
