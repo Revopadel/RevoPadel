@@ -90,6 +90,45 @@ div.bk{cursor:default}
 .legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:12px;margin:10px 2px 0}
 .lg{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:-8px;vertical-align:-1px;border:1px solid transparent}
 .lg.app{background:#14254A;border-color:#2E4A8C}.lg.pend{background:#2C2410;border-color:#6B5414}.lg.tel{background:#1E2A0C;border-color:#4C5E14}.lg.blk{background:#1A2230;border-color:#2A3445}.lg.free{border:1px dashed #55631F}
+/* ===== Animaciones ===== */
+.btn,.slot,.day,.card,.tabs button,.bk,.hr{transition:transform .14s ease,filter .14s ease,background .2s,border-color .2s,color .2s}
+.btn:active,.slot:active,.day:active,.tabs button:active,button.card:active{transform:scale(.965)}
+.confeti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:40}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  @keyframes sheetup{from{transform:translateY(100%)}to{transform:none}}
+  @keyframes sheetin{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+  @keyframes toastin{from{opacity:0;transform:translate(-50%,16px) scale(.95)}to{opacity:1;transform:translate(-50%,0)}}
+  @keyframes tabpop{0%{transform:scale(1)}40%{transform:scale(1.22) translateY(-2px)}100%{transform:scale(1)}}
+  @keyframes urge{50%{transform:scale(1.06);color:#FFB347}}
+  @keyframes shine{from{background-position:-200% 0}to{background-position:200% 0}}
+  #app.enter .card,#app.enter .board,#app.enter .empty-state,#app.enter .kpi,#app.enter .cardgrid>*{animation:rise .42s cubic-bezier(.2,.7,.2,1) both}
+  #app.enter .card:nth-of-type(2),#app.enter .cardgrid>*:nth-child(2){animation-delay:.05s}
+  #app.enter .card:nth-of-type(3),#app.enter .cardgrid>*:nth-child(3){animation-delay:.1s}
+  #app.enter .card:nth-of-type(4),#app.enter .cardgrid>*:nth-child(4){animation-delay:.15s}
+  #app.enter .card:nth-of-type(n+5),#app.enter .cardgrid>*:nth-child(n+5){animation-delay:.2s}
+  #app.enter .slot{animation:pop .32s cubic-bezier(.2,.8,.3,1.2) both}
+  #app.enter .slot:nth-child(3n+2){animation-delay:.03s}
+  #app.enter .slot:nth-child(3n){animation-delay:.06s}
+  #app.enter .slot:nth-child(n+4){animation-delay:.09s}
+  #app.enter .slot:nth-child(n+7){animation-delay:.13s}
+  #app.enter .board tbody tr{animation:fadein .4s both}
+  .sheet-bg.opening{animation:fadein .2s ease both}
+  .sheet-bg.opening .sheet{animation:sheetup .34s cubic-bezier(.2,.85,.25,1) both}
+  .toast.pop{animation:toastin .3s cubic-bezier(.2,.8,.3,1.2) both}
+  .tabs button.on svg{animation:tabpop .4s ease}
+  .cd.urg{display:inline-block;animation:urge 1s ease-in-out infinite}
+  .slot.free:hover,.slot.open:hover{transform:translateY(-2px);filter:brightness(1.15)}
+  html body .btn:not(.btn-line):not(.btn-danger):not(:disabled){background-image:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);background-size:200% 100%;background-repeat:no-repeat;background-position:-200% 0}
+  html body .btn:not(.btn-line):not(.btn-danger):not(:disabled):hover{animation:shine .9s ease}
+  html body .pushcard .btn{animation:shine 2.6s ease 1.2s 2}
+  .spin{animation-duration:.7s}
+}
+@media (prefers-reduced-motion:no-preference) and (min-width:900px){
+  html body .sheet-bg.opening .sheet{animation:sheetin .28s cubic-bezier(.2,.85,.25,1) both}
+}
 .fixtag{background:#1F2A44;color:var(--accent);font-size:10px;padding:2px 6px;margin-left:4px;vertical-align:1px}
 .pushcard{border-color:#3B4A12;background:linear-gradient(180deg,rgba(212,240,74,.07),transparent)}
 .contact{display:flex;flex-direction:column;gap:12px}
@@ -222,9 +261,24 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function lvl(x){return x==null?'':Number(x).toFixed(1).replace('.',',');}
 function pname(p){return p.profiles?p.profiles.name:(p.guest_name||'Jugador');}
 
+/* ===== Celebración: lluvia de pelotas de pádel cuando la reserva queda pagada ===== */
+function celebrate(){if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var c=document.createElement('canvas'),x=c.getContext('2d'),W=c.width=innerWidth*devicePixelRatio,Hh=c.height=innerHeight*devicePixelRatio,dp=devicePixelRatio;
+  c.className='confeti';document.body.appendChild(c);
+  var P=[],n=46;for(var i=0;i<n;i++){var a=-Math.PI/2+(Math.random()-.5)*1.9,v=(9+Math.random()*9)*dp;
+    P.push({x:W/2,y:Hh*0.62,vx:Math.cos(a)*v,vy:Math.sin(a)*v,r:(6+Math.random()*7)*dp,rot:Math.random()*6,vr:(Math.random()-.5)*.3,lime:Math.random()<.78});}
+  var t0=performance.now();
+  (function f(t){var k=(t-t0)/1700;x.clearRect(0,0,W,Hh);
+    P.forEach(function(p){p.vy+=.42*dp;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;
+      x.save();x.globalAlpha=Math.max(0,1-Math.max(0,k-.65)/.35);x.translate(p.x,p.y);x.rotate(p.rot);
+      x.fillStyle=p.lime?'#D4F04A':'#EEF2F7';x.beginPath();x.arc(0,0,p.r,0,7);x.fill();
+      x.strokeStyle='rgba(10,15,5,.75)';x.lineWidth=p.r*.16;x.beginPath();x.arc(-p.r*1.25,0,p.r*.95,-.75,.75);x.stroke();x.beginPath();x.arc(p.r*1.25,0,p.r*.95,Math.PI-.75,Math.PI+.75);x.stroke();
+      x.restore();});
+    if(k<1)requestAnimationFrame(f);else c.remove();})(t0);
+  if(navigator.vibrate)try{navigator.vibrate([18,40,18]);}catch(e){}}
 /* ===== Avisos ===== */
 var tt=null;
-function toast(msg,bad){var el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);}el.className='toast'+(bad?' bad':'');el.textContent=msg;el.hidden=false;clearTimeout(tt);tt=setTimeout(function(){el.hidden=true;},3200);}
+function toast(msg,bad){var el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);}el.className='toast'+(bad?' bad':'');el.textContent=msg;el.hidden=false;void el.offsetWidth;el.classList.add('pop');clearTimeout(tt);tt=setTimeout(function(){el.hidden=true;},3200);}
 function errMsg(e){var m=(e&&(e.message||e.error_description))||'Algo ha fallado';
   if(/Invalid login credentials/i.test(m))return 'Correo o contraseña incorrectos';
   if(/Email not confirmed/i.test(m))return 'Confirma tu correo antes de entrar (mira tu bandeja de entrada)';
@@ -268,7 +322,7 @@ async function loadTab(){
 }
 async function myIds(from,to){var r=await q(sb.from('booking_players').select('booking_id,bookings!inner(day,status)').eq('user_id',S.user.id).gte('bookings.day',from).lte('bookings.day',to).eq('bookings.status','active'));
   return r.map(function(x){return x.booking_id;});}
-async function refresh(){try{await loadTab();}catch(e){toast(errMsg(e),true);}render();}
+async function refresh(){try{await loadTab();}catch(e){toast(errMsg(e),true);}var a=S.enter;S.enter=false;render(a);}
 
 /* ===== Pintar ===== */
 var ICON={
@@ -281,8 +335,9 @@ var ICON={
 var TABNAME={reservar:'Reservar',partidos:'Partidos',mias:'Mis reservas',perfil:'Perfil',club:'Club'};
 function header(){return '<div class="top"><svg class="logo" role="img" aria-label="Revo" width="94" height="40" viewBox="0 0 400 170"><text x="0" y="142" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-style="italic" font-weight="800" font-size="164" fill="currentColor" textLength="236" lengthAdjust="spacingAndGlyphs">REV</text><circle cx="320" cy="85" r="66" fill="#D4F04A"></circle><path d="M278 35C302 62 302 108 278 135M362 35C338 62 338 108 362 135" fill="none" stroke="#0A0F05" stroke-width="9" stroke-linecap="round"></path></svg><span class="tag warn">Versión de prueba</span></div>';}
 
-function render(){
+function render(anim){
   var app=document.getElementById('app'),tabs=document.getElementById('tabs');
+  app.classList.remove('enter');
   if(S.loading){app.innerHTML='<div class="empty-state" style="padding-top:40vh"><span class="spin"></span></div>';tabs.hidden=true;return;}
   if(!S.user){app.innerHTML=vAuth();tabs.hidden=true;renderSheet();return;}
   if(!S.club){app.innerHTML=header()+'<div class="card"><b>No se ha podido cargar el club.</b><p class="muted small">Revisa tu conexión.</p><button class="btn btn-block" data-act="retry">Reintentar</button></div>';tabs.hidden=true;return;}
@@ -291,6 +346,7 @@ function render(){
   tabs.hidden=false;
   var v={reservar:vReservar,partidos:vPartidos,mias:vMias,perfil:vPerfil,club:vClub}[S.tab]||vReservar;
   app.innerHTML=header()+v();
+  if(anim){void app.offsetWidth;app.classList.add('enter');clearTimeout(render.t);render.t=setTimeout(function(){app.classList.remove('enter');},900);}
   renderSheet();
 }
 
@@ -464,7 +520,9 @@ function cobrosCard(){var c=S.cobros;if(!c||c.loading)return '<div class="card m
   return '<div class="card col"><div><b>'+(c.conectado?'Termina de conectar los cobros':'Conecta los cobros del club')+'</b><p class="muted small" style="margin:4px 0 0">'+(c.conectado?'Falta completar los datos del club en Stripe.':'Para que el dinero de las reservas llegue directo a la cuenta del club.')+' Mientras tanto, los pagos de prueba se quedan en la cuenta de Revo.</p></div><button class="btn btn-line" data-act="cobros"'+(S.busy?' disabled':'')+'>'+(c.conectado?'Continuar en Stripe':'Conectar cobros con Stripe')+'</button></div>';}
 
 /* ===== Hojas (ventanas inferiores) ===== */
-function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){el.innerHTML='';return;}
+var lastSheet=null;
+function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){el.innerHTML='';lastSheet=null;return;}
+  var sk=s.type+'|'+(s.id||'')+'|'+(s.court||'')+'|'+(s.start||''),opening=sk!==lastSheet;lastSheet=sk;
   var h='';
   if(s.type==='book'){var ct=court(s.court),p=ppl(s.start),opts=function(sel){var o='';for(var x=10;x<=70;x+=5){var v=(x/10).toFixed(1);o+='<option value="'+v+'"'+(Number(sel).toFixed(1)===v?' selected':'')+'>'+v.replace('.',',')+'</option>';}return o;};
     var L=Number(S.me.level),mn=Math.max(1,L-0.5),mx=Math.min(7,L+0.5);
@@ -519,7 +577,7 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     '<p class="muted" style="margin:6px 0 10px;text-transform:capitalize">'+esc(ict.name)+' · '+esc(dayLong(iv.day))+' · '+hm(iv.start_min)+'–'+hm(iv.start_min+S.club.slot_min)+'</p>'+
     '<div class="card"><b>'+esc(iv.owner_name||'Un jugador')+'</b> te invita a jugar. Hay '+iv.players+' de '+iv.size+' jugadores'+(iv.pay_mode==='full'?' y la pista ya está pagada.':', '+iv.paid+(iv.paid===1?' ya ha pagado.':' ya han pagado.'))+'</div>'+
     (ifull?'<p class="muted center">El partido está completo.</p>':'<button class="btn btn-block" data-act="join" data-v="'+iv.id+'" data-mode="'+iv.pay_mode+'"'+(S.busy?' disabled':'')+'>'+(iv.pay_mode==='full'?'Unirme (ya está pagada)':'Unirme y pagar mi parte · '+euro(ppl(iv.start_min)+FEE))+'</button>');}
-  el.innerHTML='<div class="sheet-bg" data-act="bg"><div class="sheet" role="dialog" aria-modal="true">'+h+'</div></div>';
+  el.innerHTML='<div class="sheet-bg'+(opening?' opening':'')+'" data-act="bg"><div class="sheet" role="dialog" aria-modal="true">'+h+'</div></div>';
   var chat=document.getElementById('chatBox');if(chat)chat.scrollTop=chat.scrollHeight;}
 
 function vMatch(){var b=S.match;if(!b)return '<div class="center"><span class="spin"></span></div>';
@@ -601,9 +659,9 @@ async function rpc(name,args,okMsg){S.busy=true;renderSheet();render();
 var A={
   retry:function(){curUid=undefined;start();},
   authMode:function(el){S.authMode=el.dataset.v;render();},
-  tab:function(el){S.tab=el.dataset.v;if(S.tab==='club'&&S.cobros)S.cobros.stale=true;S.sheet=null;stopPoll();render();refresh();window.scrollTo(0,0);},
-  day:function(el){S.day=el.dataset.v;render();refresh();},
-  panelDay:function(el){S.panelDay=el.dataset.v;S.caja=null;render();refresh();},
+  tab:function(el){S.enter=true;S.tab=el.dataset.v;if(S.tab==='club'&&S.cobros)S.cobros.stale=true;S.sheet=null;stopPoll();render();refresh();window.scrollTo(0,0);},
+  day:function(el){S.enter=true;S.day=el.dataset.v;render();refresh();},
+  panelDay:function(el){S.enter=true;S.panelDay=el.dataset.v;S.caja=null;render();refresh();},
   book:function(el){S.busy=false;S.sheet={type:'book',court:el.dataset.court,start:+el.dataset.v,open:false};renderSheet();},
   toggleOpen:function(el){S.sheet.open=el.checked;renderSheet();},
   match:function(el){if(el.dataset.v)openMatch(el.dataset.v);else{S.sheet=null;renderSheet();}},
@@ -736,7 +794,7 @@ async function setUser(u){var uid=(u&&u.id)||null;
       var tries=0;(async function chk(){tries++;var r=null;try{r=await fx('pago-verificar',{booking_id:pb});}catch(e){}
         var done=r&&r.resultados&&r.resultados.some(function(x){return x==='pagado'||x==='ya_procesado'||x==='devuelto';});
         if(done||tries>=4){await refresh();if(S.sheet&&S.sheet.id===pb)loadMatch(pb).then(keepChat).catch(function(){});
-          if(r&&r.estado_pago==='confirmed')toast('¡Pagado! Reserva confirmada');else if(done)toast('Pagado. Falta que paguen los demás');}
+          if(r&&r.estado_pago==='confirmed'){toast('¡Pagado! Reserva confirmada');celebrate();}else if(done){toast('Pagado. Falta que paguen los demás');celebrate();}}
         else setTimeout(chk,2000);})();}
     else releaseUnpaid(pb);}
   if(S.reopenPay&&!pg){var rp=S.reopenPay;S.reopenPay=null;releaseUnpaid(rp);}
