@@ -13,8 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Revo Real">
 <title>Revo Pádel · versión conectada</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../web/fonts/fonts.css">
 <style>
 /* Versión conectada a Supabase. Mismo aspecto "Pista nocturna" que la demo. */
 :root{
@@ -170,6 +169,11 @@ div.bk{cursor:default}
   html body .sheet-bg.closing .sheet{animation:sheetout .18s ease forwards}
   html body .tabs button.on::after{left:6px;top:50%;bottom:auto;transform:translateY(-50%);animation:none}
 }
+.terms{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45;cursor:pointer}
+.terms input{width:20px;height:20px;flex:none;margin:1px 0 0;accent-color:var(--lime)}
+.terms a,.legal a{color:var(--ink)}
+.legal{text-align:center;color:var(--muted);margin:16px 0 0}
+.legal a{color:var(--muted)}
 .fixtag{background:#1F2A44;color:var(--accent);font-size:10px;padding:2px 6px;margin-left:4px;vertical-align:1px}
 .pushcard{border-color:#3B4A12;background:linear-gradient(180deg,rgba(212,240,74,.07),transparent)}
 .contact{display:flex;flex-direction:column;gap:12px}
@@ -400,9 +404,11 @@ function vAuth(){
   (reg?'<div class="field"><label for="f-name">Nombre</label><input class="input" id="f-name" name="name" maxlength="40" autocomplete="name" required></div>':'')+
   '<div class="field"><label for="f-email">Correo</label><input class="input" id="f-email" name="email" type="email" autocomplete="email" required></div>'+
   '<div class="field"><label for="f-pass">Contraseña</label><input class="input" id="f-pass" name="password" type="password" minlength="6" autocomplete="'+(reg?'new-password':'current-password')+'" required></div>'+
+  (reg?'<label class="terms"><input type="checkbox" name="terms" required><span>He leído y acepto las <a href="../legal/condiciones.html" target="_blank" rel="noopener">condiciones de uso</a> y la <a href="../legal/privacidad.html" target="_blank" rel="noopener">política de privacidad</a>. Tengo 14 años o más.</span></label>':'')+
   '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un momento…':(reg?'Crear cuenta':'Entrar'))+'</button>'+
-  '</form>';
+  '</form>'+legalLinks();
 }
+function legalLinks(){return '<p class="legal small"><a href="../legal/condiciones.html" target="_blank" rel="noopener">Condiciones</a> · <a href="../legal/privacidad.html" target="_blank" rel="noopener">Privacidad</a> · <a href="../legal/aviso-legal.html" target="_blank" rel="noopener">Aviso legal</a></p>';}
 
 function dayChips(sel,act){var n=nowM().day,h='<div class="days">';
   for(var i=0;i<14;i++){var d=addDays(n,i);h+='<button class="day'+(d===sel?' on':'')+'" data-act="'+act+'" data-v="'+d+'"><span>'+(i===0?'Hoy':dfmt(d,{weekday:'short'}).replace('.',''))+'</span><b>'+dfmt(d,{day:'numeric'})+'</b></button>';}
@@ -453,7 +459,7 @@ function vPerfil(){var me=S.me,opts='';for(var x=10;x<=70;x+=5){var v=(x/10).toF
   '<div class="card"><div class="muted small">Has entrado como</div><b>'+esc(S.user.email)+'</b>'+(S.admin?'<div style="margin-top:6px"><span class="tag lime">Administrador del Olimpo</span></div>':'')+'</div>'+
   (S.admin?'':'<form class="card col" data-form="claim"><div><b>¿Gestionas un club?</b><p class="muted small" style="margin:4px 0 0">Introduce el código que te hemos dado para activar el panel de tu club.</p></div><div class="field"><label for="c-code">Código del club</label><input class="input" id="c-code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej.: OLIMPO-XXXXXX" required minlength="4" maxlength="40"></div><button class="btn btn-line" type="submit"'+(S.busy?' disabled':'')+'>Activar panel del club</button></form>')+
   pushCard(false)+contactCard()+
-  '<button class="btn btn-line btn-block" data-act="logout">Cerrar sesión</button>'+
+  '<button class="btn btn-line btn-block" data-act="logout">Cerrar sesión</button>'+legalLinks()+
   '<p class="muted small center" style="margin-top:18px">Versión de prueba: los pagos son de mentira. Para pagar usa la tarjeta 4242 4242 4242 4242, cualquier fecha futura y cualquier CVC.</p>';}
 
 /* ===== Avisos en el móvil (notificaciones push) ===== */
@@ -758,7 +764,7 @@ var FORMS={
   auth:async function(f){var d=new FormData(f),email=String(d.get('email')||'').trim(),pw=String(d.get('password')||'');
     S.busy=true;render();
     try{if(S.authMode==='register'){var name=String(d.get('name')||'').trim();
-        var r=await sb.auth.signUp({email:email,password:pw,options:{data:{name:name},emailRedirectTo:location.origin+location.pathname}});
+        var r=await sb.auth.signUp({email:email,password:pw,options:{data:{name:name,terms_accepted_at:new Date().toISOString(),terms_version:'2026-10-28'},emailRedirectTo:location.origin+location.pathname}});
         if(r.error)throw r.error;
         if(!r.data.session){S.authMode='login';toast('Te hemos enviado un correo para confirmar tu cuenta');}
       }else{var r2=await sb.auth.signInWithPassword({email:email,password:pw});if(r2.error)throw r2.error;}
