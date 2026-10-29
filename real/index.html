@@ -175,6 +175,24 @@ div.bk{cursor:default}
 .lvrow{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer}
 .lvrow.on{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset}
 .lvnum{font-family:var(--font-d);font-weight:800;font-size:20px;line-height:1.1;color:var(--lime);min-width:76px;white-space:nowrap}
+.quiz h2{margin:0}
+.quiz .qq{font-size:24px;line-height:1.15;margin:14px 0 14px}
+.qball{display:flex;justify-content:center;margin:4px 0 10px}
+.qbar{height:6px;border-radius:99px;background:var(--surface2);margin-top:10px;overflow:hidden}
+.qbar i{display:block;height:100%;background:var(--lime);border-radius:99px;transition:width .3s ease}
+.qopt{width:100%;text-align:left;color:inherit;font:inherit;font-weight:600;padding:14px 16px;cursor:pointer}
+.qopt.on{border-color:var(--lime);background:rgba(212,240,74,.10);color:var(--lime)}
+.qres{font-family:var(--font-d);font-weight:800;font-size:88px;line-height:.95;color:var(--lime);margin-top:4px}
+.qadj{justify-content:space-between;align-items:center;gap:8px}
+.qadj .btn{min-width:72px}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes qin{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+  @keyframes qpop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+  .quiz .qq,.quiz .list{animation:qin .28s ease both}
+  .qres{animation:qpop .5s cubic-bezier(.2,1.4,.4,1) both}
+  @keyframes qhop{0%,100%{transform:none}40%{transform:translateY(-14px) rotate(160deg)}}
+  .qball svg{animation:qhop .8s cubic-bezier(.3,0,.4,1) .2s 2}
+}
 .terms{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45;cursor:pointer}
 .terms input{width:20px;height:20px;flex:none;margin:1px 0 0;accent-color:var(--lime)}
 .terms a,.legal a{color:var(--ink)}
@@ -323,6 +341,20 @@ function lvlInfo(x){x=Number(x);for(var i=0;i<LEVELS.length;i++)if(x<=LEVELS[i].
 function lvlCat(L){return L.cat?'≈ '+L.cat+' categoría':'Sin categoría';}
 function lvlHint(x){var L=lvlInfo(x);return '<b>'+esc(L.name)+'</b> · '+lvlCat(L)+'<br>'+esc(L.d);}
 function lvlRange(a,b){var A=lvlInfo(a),B=lvlInfo(b);return A===B?'Para jugadores de nivel <b>'+esc(A.name.toLowerCase())+'</b>'+(A.cat?' (≈ '+A.cat+')':'')+'.':'De <b>'+esc(A.name.toLowerCase())+'</b> a <b>'+esc(B.name.toLowerCase())+'</b>.';}
+/* Test de nivel: cada respuesta apunta a un nivel; la media ponderada da el resultado */
+var QUIZ=[
+  {q:'¿Cuánto tiempo llevas jugando al pádel?',w:1,o:[['Menos de 6 meses',1.5],['Entre 6 meses y 2 años',2.75],['Entre 2 y 5 años',4],['Más de 5 años',5]]},
+  {q:'¿Cuántas veces juegas a la semana?',w:.5,o:[['Alguna vez al mes',2],['Una vez',3],['Dos o tres veces',4],['Cuatro o más',5]]},
+  {q:'Cuando la bola va a la pared de fondo…',w:2,o:[['La dejo pasar o me cuesta mucho',1.5],['La devuelvo a veces, sin mucho control',2.5],['Salgo bien casi siempre',4],['Ataco desde la pared y elijo dónde mandarla',5.5]]},
+  {q:'Cuando estás en la red…',w:2,o:[['Casi no subo',1.5],['Subo, pero fallo bastantes voleas',2.75],['Mi volea es sólida y la coloco',4],['Bloqueo, cambio el ritmo y defino el punto',5.5]]},
+  {q:'Si te tiran un globo estando en la red…',w:2,o:[['Me cuesta: retrocedo como puedo',1.75],['Hago bandeja para no perder la red',3.5],['Bandeja o víbora con intención',5],['Remato, víbora o rulo según me convenga',6]]},
+  {q:'Cuando rematas…',w:2,o:[['No suelo rematar',1.5],['Remato, pero la bola se queda en la pista',3],['Alguna la saco por 3',4.25],['La saco por 3 o la traigo por 4 con facilidad',5.75]]},
+  {q:'¿Has jugado torneos o ligas?',w:1.5,o:[['Nunca',2],['Algún torneo social o americana',3.25],['Ligas o torneos de club',4.5],['Torneos federados con buenos resultados',6]]}];
+function quizLevel(a){var sum=0,w=0;QUIZ.forEach(function(Q,i){if(a[i]!=null){sum+=Q.o[a[i]][1]*Q.w;w+=Q.w;}});
+  var x=w?sum/w:3;
+  if(a[0]===0)x=Math.min(x,2.5);else if(a[0]===1)x=Math.min(x,4);   // con poca experiencia no se pasa de cierto nivel
+  if(a[6]===3)x=Math.max(x,5);                                          // federados con resultados: al menos avanzado
+  return Math.min(7,Math.max(1,Math.round(x*2)/2));}
 function lvlOpts(sel,long){var o='';for(var x=10;x<=70;x+=5){var v=(x/10).toFixed(1);o+='<option value="'+v+'"'+(Number(sel).toFixed(1)===v?' selected':'')+'>'+v.replace('.',',')+(long?' · '+lvlInfo(v).name:'')+'</option>';}return o;}
 function pname(p){return p.profiles?p.profiles.name:(p.guest_name||'Jugador');}
 
@@ -475,7 +507,7 @@ function vPerfil(){var me=S.me,opts=lvlOpts(me.level,true);
   return '<h2 style="margin-top:4px">Tu perfil</h2>'+
   '<form class="card col" data-form="profile"><div class="field"><label for="p-name">Nombre</label><input class="input" id="p-name" name="name" maxlength="40" value="'+esc(me.name)+'" required></div>'+
   '<div class="field"><label for="p-level">Nivel</label><select class="input" id="p-level" name="level">'+opts+'</select>'+
-  '<div class="lvlhint" id="p-hint" aria-live="polite">'+lvlHint(me.level)+'</div><button type="button" class="linkbtn" data-act="levels">¿No sabes tu nivel? Mira la guía</button></div>'+
+  '<div class="lvlhint" id="p-hint" aria-live="polite">'+lvlHint(me.level)+'</div><div class="row" style="gap:16px;flex-wrap:wrap"><button type="button" class="linkbtn" data-act="quizGo">Hacer el test de nivel</button><button type="button" class="linkbtn" data-act="levels">Ver la guía</button></div></div>'+
   '<button class="btn" type="submit">Guardar</button></form>'+
   '<div class="card"><div class="muted small">Has entrado como</div><b>'+esc(S.user.email)+'</b>'+(S.admin?'<div style="margin-top:6px"><span class="tag lime">Administrador del Olimpo</span></div>':'')+'</div>'+
   (S.admin?'':'<form class="card col" data-form="claim"><div><b>¿Gestionas un club?</b><p class="muted small" style="margin:4px 0 0">Introduce el código que te hemos dado para activar el panel de tu club.</p></div><div class="field"><label for="c-code">Código del club</label><input class="input" id="c-code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej.: OLIMPO-XXXXXX" required minlength="4" maxlength="40"></div><button class="btn btn-line" type="submit"'+(S.busy?' disabled':'')+'>Activar panel del club</button></form>')+
@@ -594,7 +626,7 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     else if(!bgx||!motionOK())el.innerHTML='';
     return;}
   clearTimeout(renderSheet.t);
-  var sk=s.type+'|'+(s.id||'')+'|'+(s.court||'')+'|'+(s.start||''),opening=sk!==lastSheet;lastSheet=sk;
+  var sk=(s.type.indexOf('quiz')===0?'quiz':s.type)+'|'+(s.id||'')+'|'+(s.court||'')+'|'+(s.start||''),opening=sk!==lastSheet;lastSheet=sk;
   var h='';
   if(s.type==='book'){var ct=court(s.court),p=ppl(s.start),opts=function(sel){return lvlOpts(sel,false);};
     var L=Number(S.me.level),mn=s.lmin!=null?Number(s.lmin):Math.max(1,L-0.5),mx=s.lmax!=null?Number(s.lmax):Math.min(7,L+0.5);
@@ -611,6 +643,21 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     ' Cada pago incluye '+euro(FEE)+' de gestión.</p>'+
     '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un momento…':'Reservar y pagar')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='match'){h=vMatch();}
+  else if(s.type==='quizIntro'){
+    h='<div class="quiz"><div class="qball">'+QBALL+'</div><h2>¿Qué nivel tienes?</h2><p class="muted" style="margin:8px 0 16px">Responde 7 preguntas rápidas (menos de 1 minuto) y te decimos tu nivel. Así los partidos abiertos te juntan con gente parecida.</p>'+
+    '<button class="btn btn-block" data-act="quizGo">Empezar el test</button>'+
+    '<div class="row" style="margin-top:10px;gap:10px"><button class="btn btn-line" style="flex:1" data-act="quizManual">Lo elijo yo</button><button class="btn btn-line" style="flex:1" data-act="quizLater">Ahora no</button></div></div>';}
+  else if(s.type==='quiz'){var Q=QUIZ[s.i],n=QUIZ.length;
+    h='<div class="quiz"><div class="row between small muted"><span>Pregunta '+(s.i+1)+' de '+n+'</span>'+(s.i>0?'<button type="button" class="linkbtn" style="padding:0" data-act="quizBack">← Atrás</button>':'<span></span>')+'</div>'+
+    '<div class="qbar"><i style="width:'+Math.round(s.i/n*100)+'%"></i></div><h2 class="qq">'+esc(Q.q)+'</h2><div class="list">'+
+    Q.o.map(function(o,k){return '<button type="button" class="card qopt'+(s.a[s.i]===k?' on':'')+'" data-act="quizAns" data-v="'+k+'">'+esc(o[0])+'</button>';}).join('')+'</div></div>';}
+  else if(s.type==='quizRes'){var L2=lvlInfo(s.lv);
+    h='<div class="quiz center"><span class="muted small">Tu nivel aproximado</span><div class="qres">'+lvl(s.lv)+'</div><h2>'+esc(L2.name)+'</h2><p class="muted small" style="margin:4px 0 0">'+lvlCat(L2)+'</p>'+
+    '<p style="margin:12px 0 16px">'+esc(L2.d)+'</p>'+
+    '<div class="row qadj"><button class="btn btn-line" data-act="quizAdj" data-v="-0.5"'+(s.lv<=1?' disabled':'')+' aria-label="Bajar medio punto">− 0,5</button><span class="muted small">¿No te ves? Ajústalo</span><button class="btn btn-line" data-act="quizAdj" data-v="0.5"'+(s.lv>=7?' disabled':'')+' aria-label="Subir medio punto">+ 0,5</button></div>'+
+    '<button class="btn btn-block" style="margin-top:14px" data-act="quizSave"'+(S.busy?' disabled':'')+'>'+(S.busy?'Guardando…':'Guardar nivel '+lvl(s.lv))+'</button>'+
+    '<button class="btn btn-line btn-block" style="margin-top:8px" data-act="quizGo">Repetir el test</button>'+
+    '<p class="muted small" style="margin-top:12px">Es una estimación: si juegas con gente que te gana o pierde siempre, cámbialo en Perfil.</p></div>';}
   else if(s.type==='levels'){var mine=lvlInfo(S.me.level);
     h='<h2>Guía de niveles</h2><p class="muted small" style="margin:6px 0 12px">Elige el que más se parezca a cómo juegas. Las categorías son orientativas: cada club y cada liga las ajusta a su manera.</p><div class="list">'+
     LEVELS.map(function(L){var on=L===mine;return '<button type="button" class="card lvrow'+(on?' on':'')+'" data-act="pickLevel" data-v="'+L.from.toFixed(1)+'">'+
@@ -747,6 +794,18 @@ var A={
   levels:function(){var prev=S.sheet;if(prev&&prev.type==='book'){var a=document.getElementById('b-min'),b=document.getElementById('b-max');if(a&&b){prev.lmin=a.value;prev.lmax=b.value;}}
     S.sheet={type:'levels',back:prev&&prev.type==='book'?'book':'',prev:prev};renderSheet();},
   levelsBack:function(){S.sheet=S.sheet.prev;renderSheet();},
+  quiz:function(){S.sheet={type:'quizIntro'};renderSheet();},
+  quizGo:function(){S.busy=false;S.sheet={type:'quiz',i:0,a:[]};renderSheet();},
+  quizBack:function(){if(S.sheet.i>0){S.sheet.i--;renderSheet();}},
+  quizAns:function(el){var s=S.sheet,k=+el.dataset.v;s.a[s.i]=k;buzz();el.classList.add('on');
+    setTimeout(function(){if(S.sheet!==s)return;if(s.i<QUIZ.length-1){s.i++;renderSheet();}else{S.sheet={type:'quizRes',lv:quizLevel(s.a),a:s.a};renderSheet();}},220);},
+  quizAdj:function(el){var s=S.sheet;s.lv=Math.min(7,Math.max(1,s.lv+Number(el.dataset.v)));renderSheet();},
+  quizSave:async function(){var s=S.sheet,lv=s.lv;S.busy=true;renderSheet();
+    var r=await sb.from('profiles').update({level:lv}).eq('id',S.user.id).select().single();S.busy=false;
+    if(r.error){renderSheet();toast(errMsg(r.error),true);return;}
+    S.me=r.data;markLevelSet();S.sheet=null;renderSheet();render();toast('Nivel '+lvl(lv)+' guardado: '+lvlInfo(lv).name.toLowerCase());celebrate();},
+  quizManual:function(){markLevelSet();S.sheet=null;renderSheet();S.enter=true;S.tab='perfil';render();refresh();setTimeout(function(){var e=document.getElementById('p-level');if(e)e.focus();},400);},
+  quizLater:function(){markLevelSet();S.sheet=null;renderSheet();},
   pickLevel:function(el){var v=el.dataset.v,prev=S.sheet.prev;
     if(prev&&prev.type==='book'){S.sheet=prev;renderSheet();return;}
     var sel=document.getElementById('p-level');S.sheet=null;renderSheet();
@@ -892,6 +951,13 @@ function afterRender(anim){
       setTimeout(function(){var el=document.getElementById('sheet');if(!S.sheet)el.innerHTML='';},200);lastSheet=null;}
     else{s.sh.style.transition='transform .25s cubic-bezier(.2,.85,.25,1)';s.sh.style.transform='';}},{passive:true});})();
 
+/* ===== Test de nivel la primera vez ===== */
+var QBALL='<svg viewBox="0 0 24 24" width="56" height="56" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#D4F04A"/><path d="M4.5 5.5c3.5 3 3.5 10 0 13M19.5 5.5c-3.5 3-3.5 10 0 13" fill="none" stroke="#0A0F05" stroke-width="1.6" stroke-linecap="round"/></svg>';
+function markLevelSet(){try{sb.auth.updateUser({data:{level_set:true}}).catch(function(){});}catch(e){}
+  if(S.user){S.user.user_metadata=Object.assign({},S.user.user_metadata,{level_set:true});}}
+function maybeLevelQuiz(){if(!S.user||!S.me||S.sheet||S.loading)return;var md=S.user.user_metadata||{};if(md.level_set)return;
+  S.sheet={type:'quizIntro'};renderSheet();}
+
 /* ===== Arranque ===== */
 var curUid;
 async function setUser(u){var uid=(u&&u.id)||null;
@@ -925,6 +991,7 @@ async function setUser(u){var uid=(u&&u.id)||null;
         else setTimeout(chk,2000);})();}
     else releaseUnpaid(pb);}
   if(S.reopenPay&&!pg){var rp=S.reopenPay;S.reopenPay=null;releaseUnpaid(rp);}
+  if(!pg&&!stv)setTimeout(maybeLevelQuiz,700);
   if(stv){history.replaceState(null,'',location.pathname);if(S.admin){S.tab='club';render();refresh();toast(stv==='vuelta'?'Volviste de Stripe: comprobando la cuenta del club…':'El enlace caducó, vuelve a pulsar «Conectar cobros»');}}}
 async function start(){
   try{var r=await sb.auth.getSession();await setUser(r.data.session&&r.data.session.user);}
