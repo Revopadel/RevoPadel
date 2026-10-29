@@ -169,6 +169,12 @@ div.bk{cursor:default}
   html body .sheet-bg.closing .sheet{animation:sheetout .18s ease forwards}
   html body .tabs button.on::after{left:6px;top:50%;bottom:auto;transform:translateY(-50%);animation:none}
 }
+.lvlhint{margin-top:8px;background:var(--surface2);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--muted);line-height:1.45}
+.lvlhint b{color:var(--ink)}
+.linkbtn{background:none;border:0;color:var(--accent);font:inherit;font-size:13px;font-weight:700;padding:6px 0 0;cursor:pointer;text-align:left}
+.lvrow{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.lvrow.on{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset}
+.lvnum{font-family:var(--font-d);font-weight:800;font-size:20px;line-height:1.1;color:var(--lime);min-width:76px;white-space:nowrap}
 .terms{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45;cursor:pointer}
 .terms input{width:20px;height:20px;flex:none;margin:1px 0 0;accent-color:var(--lime)}
 .terms a,.legal a{color:var(--ink)}
@@ -304,6 +310,20 @@ function euro(x){return Number(x).toFixed(2).replace('.',',')+' €';}
 function court(id){for(var i=0;i<S.courts.length;i++)if(S.courts[i].id===id)return S.courts[i];return {name:'Pista',size:4};}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function lvl(x){return x==null?'':Number(x).toFixed(1).replace('.',',');}
+/* Niveles: escala 1–7 con una referencia de juego y la categoría aproximada */
+var LEVELS=[
+  {from:1,to:1.5,name:'Iniciación',cat:'',d:'Estoy empezando: me cuesta pasar la bola y las paredes todavía me lían.'},
+  {from:2,to:2.5,name:'Iniciación avanzada',cat:'',d:'Aguanto peloteos tranquilos, pero la volea y las salidas de pared aún me fallan.'},
+  {from:3,to:3.5,name:'Intermedio',cat:'5ª',d:'Peloteo con soltura, uso las paredes y subo a la red. Remato, pero la bola se queda en la pista.'},
+  {from:4,to:4.5,name:'Intermedio alto',cat:'4ª',d:'Bandeja y salidas de pared con control, juego con táctica. Remato y alguna la saco por 3.'},
+  {from:5,to:5.5,name:'Avanzado',cat:'3ª',d:'Remato y la saco por 3 o la traigo por 4. Víbora, globos y bajadas de pared con intención.'},
+  {from:6,to:6.5,name:'Competición',cat:'2ª',d:'Compito en torneos y ligas con buenos resultados. Saco y traigo remates con facilidad.'},
+  {from:7,to:7,name:'Élite',cat:'1ª',d:'Nivel federado alto o profesional.'}];
+function lvlInfo(x){x=Number(x);for(var i=0;i<LEVELS.length;i++)if(x<=LEVELS[i].to+1e-9)return LEVELS[i];return LEVELS[LEVELS.length-1];}
+function lvlCat(L){return L.cat?'≈ '+L.cat+' categoría':'Sin categoría';}
+function lvlHint(x){var L=lvlInfo(x);return '<b>'+esc(L.name)+'</b> · '+lvlCat(L)+'<br>'+esc(L.d);}
+function lvlRange(a,b){var A=lvlInfo(a),B=lvlInfo(b);return A===B?'Para jugadores de nivel <b>'+esc(A.name.toLowerCase())+'</b>'+(A.cat?' (≈ '+A.cat+')':'')+'.':'De <b>'+esc(A.name.toLowerCase())+'</b> a <b>'+esc(B.name.toLowerCase())+'</b>.';}
+function lvlOpts(sel,long){var o='';for(var x=10;x<=70;x+=5){var v=(x/10).toFixed(1);o+='<option value="'+v+'"'+(Number(sel).toFixed(1)===v?' selected':'')+'>'+v.replace('.',',')+(long?' · '+lvlInfo(v).name:'')+'</option>';}return o;}
 function pname(p){return p.profiles?p.profiles.name:(p.guest_name||'Jugador');}
 
 /* ===== Celebración: lluvia de pelotas de pádel cuando la reserva queda pagada ===== */
@@ -451,10 +471,11 @@ function vMias(){var h='<h2 style="margin-top:4px">Mis reservas</h2>'+pushCard(t
   if(!S.mine.length)return h+'<div class="empty-state">No tienes reservas próximas.<br><br><button class="btn" data-act="tab" data-v="reservar">Reservar pista</button></div>';
   return h+'<div class="cardgrid">'+S.mine.map(matchCard).join('')+'</div>';}
 
-function vPerfil(){var me=S.me,opts='';for(var x=10;x<=70;x+=5){var v=(x/10).toFixed(1);opts+='<option value="'+v+'"'+(Number(me.level).toFixed(1)===v?' selected':'')+'>'+v.replace('.',',')+'</option>';}
+function vPerfil(){var me=S.me,opts=lvlOpts(me.level,true);
   return '<h2 style="margin-top:4px">Tu perfil</h2>'+
   '<form class="card col" data-form="profile"><div class="field"><label for="p-name">Nombre</label><input class="input" id="p-name" name="name" maxlength="40" value="'+esc(me.name)+'" required></div>'+
-  '<div class="field"><label for="p-level">Nivel</label><select class="input" id="p-level" name="level">'+opts+'</select></div>'+
+  '<div class="field"><label for="p-level">Nivel</label><select class="input" id="p-level" name="level">'+opts+'</select>'+
+  '<div class="lvlhint" id="p-hint" aria-live="polite">'+lvlHint(me.level)+'</div><button type="button" class="linkbtn" data-act="levels">¿No sabes tu nivel? Mira la guía</button></div>'+
   '<button class="btn" type="submit">Guardar</button></form>'+
   '<div class="card"><div class="muted small">Has entrado como</div><b>'+esc(S.user.email)+'</b>'+(S.admin?'<div style="margin-top:6px"><span class="tag lime">Administrador del Olimpo</span></div>':'')+'</div>'+
   (S.admin?'':'<form class="card col" data-form="claim"><div><b>¿Gestionas un club?</b><p class="muted small" style="margin:4px 0 0">Introduce el código que te hemos dado para activar el panel de tu club.</p></div><div class="field"><label for="c-code">Código del club</label><input class="input" id="c-code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej.: OLIMPO-XXXXXX" required minlength="4" maxlength="40"></div><button class="btn btn-line" type="submit"'+(S.busy?' disabled':'')+'>Activar panel del club</button></form>')+
@@ -575,12 +596,12 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
   clearTimeout(renderSheet.t);
   var sk=s.type+'|'+(s.id||'')+'|'+(s.court||'')+'|'+(s.start||''),opening=sk!==lastSheet;lastSheet=sk;
   var h='';
-  if(s.type==='book'){var ct=court(s.court),p=ppl(s.start),opts=function(sel){var o='';for(var x=10;x<=70;x+=5){var v=(x/10).toFixed(1);o+='<option value="'+v+'"'+(Number(sel).toFixed(1)===v?' selected':'')+'>'+v.replace('.',',')+'</option>';}return o;};
-    var L=Number(S.me.level),mn=Math.max(1,L-0.5),mx=Math.min(7,L+0.5);
+  if(s.type==='book'){var ct=court(s.court),p=ppl(s.start),opts=function(sel){return lvlOpts(sel,false);};
+    var L=Number(S.me.level),mn=s.lmin!=null?Number(s.lmin):Math.max(1,L-0.5),mx=s.lmax!=null?Number(s.lmax):Math.min(7,L+0.5);
     h='<h2>Reservar</h2><p class="muted" style="margin:6px 0 12px;text-transform:capitalize">'+esc(ct.name)+' · '+esc(dayLong(S.day))+' · '+hm(s.start)+'–'+hm(s.start+S.club.slot_min)+'</p>'+
     '<div class="card"><div class="row between"><span>Por jugador</span><b>'+euro(p)+'</b></div><div class="row between muted small" style="margin-top:4px"><span>Pista completa ('+ct.size+' jugadores)</span><span>'+euro(p*ct.size)+'</span></div></div>'+
     '<form class="col" data-form="book"><label class="row card" style="margin:0"><input type="checkbox" name="open" id="b-open" '+(s.open?'checked':'')+' data-act="toggleOpen" style="width:20px;height:20px"> <span><b>Partido abierto</b><br><span class="muted small">Que se apunte gente del club para completar la pista</span></span></label>'+
-    (s.open?'<div class="row"><div class="field" style="flex:1"><label for="b-min">Nivel mínimo</label><select class="input" id="b-min" name="lmin">'+opts(mn)+'</select></div><div class="field" style="flex:1"><label for="b-max">Nivel máximo</label><select class="input" id="b-max" name="lmax">'+opts(mx)+'</select></div></div>':'')+
+    (s.open?'<div class="row"><div class="field" style="flex:1"><label for="b-min">Nivel mínimo</label><select class="input" id="b-min" name="lmin">'+opts(mn)+'</select></div><div class="field" style="flex:1"><label for="b-max">Nivel máximo</label><select class="input" id="b-max" name="lmax">'+opts(mx)+'</select></div></div><p class="muted small" id="b-hint" style="margin:-4px 0 0">'+lvlRange(mn,mx)+' <button type="button" class="linkbtn" data-act="levels">Guía de niveles</button></p>':'')+
     '<fieldset class="paychoice"><legend>¿Cómo pagas?</legend>'+
     '<label class="card row"><input type="radio" name="pay" value="share" '+(s.pay!=='full'?'checked':'')+' data-act="payMode"><span><b>Mi parte · '+euro(p+FEE)+'</b><br><span class="muted small">Cada uno paga lo suyo. La reserva se confirma cuando hayan pagado los '+ct.size+'.</span></span></label>'+
     '<label class="card row"><input type="radio" name="pay" value="full" '+(s.pay==='full'?'checked':'')+' data-act="payMode"><span><b>Pista entera · '+euro(p*ct.size+FEE)+'</b><br><span class="muted small">Para cuando los demás no tienen Revo. Queda confirmada al pagar.</span></span></label></fieldset>'+
@@ -590,6 +611,11 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     ' Cada pago incluye '+euro(FEE)+' de gestión.</p>'+
     '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un momento…':'Reservar y pagar')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='match'){h=vMatch();}
+  else if(s.type==='levels'){var mine=lvlInfo(S.me.level);
+    h='<h2>Guía de niveles</h2><p class="muted small" style="margin:6px 0 12px">Elige el que más se parezca a cómo juegas. Las categorías son orientativas: cada club y cada liga las ajusta a su manera.</p><div class="list">'+
+    LEVELS.map(function(L){var on=L===mine;return '<button type="button" class="card lvrow'+(on?' on':'')+'" data-act="pickLevel" data-v="'+L.from.toFixed(1)+'">'+
+      '<span class="lvnum">'+lvl(L.from)+(L.to>L.from?'–'+lvl(L.to):'')+'</span><span><b>'+esc(L.name)+'</b> <span class="muted small">· '+lvlCat(L)+'</span><br><span class="small">'+esc(L.d)+'</span></span></button>';}).join('')+
+    '</div><button class="btn btn-line btn-block" style="margin-top:12px" data-act="'+(s.back==='book'?'levelsBack':'close')+'">'+(s.back==='book'?'Volver a la reserva':'Cerrar')+'</button>';}
   else if(s.type==='clubs'){var cc=S.club,sl=slotList();
     h='<div class="row between"><h2>Clubes</h2><button class="btn btn-line btn-sm" data-act="close">Cerrar</button></div>'+
     '<div class="col" style="margin-top:12px"><button class="card clubcard on" data-act="close" aria-pressed="true"><span class="clubav">'+esc(cc.name.slice(0,2).toUpperCase())+'</span><span style="flex:1;text-align:left"><b>'+esc(cc.name)+'</b><br><span class="muted small">'+esc(cc.city)+' · '+S.courts.length+' pistas · '+hm(cc.open_min)+'–'+hm(sl[sl.length-1]+cc.slot_min)+'<br>Mañana '+euro(cc.price_morning)+' · tarde '+euro(cc.price_afternoon)+' por jugador</span></span><span class="small" style="color:var(--accent);font-weight:700">Actual</span></button>'+
@@ -718,6 +744,13 @@ var A={
   match:function(el){if(el.dataset.v)openMatch(el.dataset.v);else{S.sheet=null;renderSheet();}},
   close:function(){S.sheet=null;stopPoll();renderSheet();},
   clubs:function(){S.sheet={type:'clubs'};renderSheet();},
+  levels:function(){var prev=S.sheet;if(prev&&prev.type==='book'){var a=document.getElementById('b-min'),b=document.getElementById('b-max');if(a&&b){prev.lmin=a.value;prev.lmax=b.value;}}
+    S.sheet={type:'levels',back:prev&&prev.type==='book'?'book':'',prev:prev};renderSheet();},
+  levelsBack:function(){S.sheet=S.sheet.prev;renderSheet();},
+  pickLevel:function(el){var v=el.dataset.v,prev=S.sheet.prev;
+    if(prev&&prev.type==='book'){S.sheet=prev;renderSheet();return;}
+    var sel=document.getElementById('p-level');S.sheet=null;renderSheet();
+    if(sel){sel.value=v;var hn=document.getElementById('p-hint');if(hn)hn.innerHTML=lvlHint(v);toast('Nivel '+lvl(v)+' elegido. Pulsa Guardar para quedártelo');}},
   bg:function(el,ev){if(ev.target===el){S.sheet=null;stopPoll();renderSheet();}},
   join:async function(el){var id=el.dataset.v,mode=el.dataset.mode;
     var r=await rpc('join_booking',{p_booking:id},mode==='split'?null:'¡Te has apuntado!');
@@ -814,6 +847,12 @@ document.addEventListener('click',function(ev){
   if(el.dataset.act==='bg'&&ev.target!==el)return;
   if(el.tagName!=='INPUT')ev.preventDefault();
   fn(el,ev);});
+document.addEventListener('change',function(ev){var t=ev.target;
+  if(t.id==='p-level'){var hn=document.getElementById('p-hint');if(hn)hn.innerHTML=lvlHint(t.value);}
+  if(t.id==='b-min'||t.id==='b-max'){var a=document.getElementById('b-min'),b=document.getElementById('b-max'),bh=document.getElementById('b-hint');
+    if(a&&b&&Number(a.value)>Number(b.value)){if(t===a)b.value=a.value;else a.value=b.value;}
+    if(S.sheet&&S.sheet.type==='book'&&a&&b){S.sheet.lmin=a.value;S.sheet.lmax=b.value;}
+    if(bh&&a&&b)bh.innerHTML=lvlRange(a.value,b.value)+' <button type="button" class="linkbtn" data-act="levels">Guía de niveles</button>';}});
 document.addEventListener('submit',function(ev){var form=ev.target.closest('form[data-form]');if(!form)return;ev.preventDefault();if(!S.busy)FORMS[form.dataset.form](form);});
 
 /* ===== Más movimiento ===== */
