@@ -293,6 +293,88 @@ h3{font-size:18px}
 .empty-state{text-align:center;padding:28px 12px;color:var(--muted)}
 .spin{display:inline-block;width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--lime);border-radius:50%;animation:sp .8s linear infinite;vertical-align:middle}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+/* ===== Aspecto moderno: cristal, luz ambiental y formas más suaves ===== */
+:root{--glass:rgba(17,24,35,.72);--glass-line:rgba(255,255,255,.07);--hi:rgba(255,255,255,.05);--r:20px}
+body{background:
+  radial-gradient(900px 520px at 12% -8%,rgba(212,240,74,.07),transparent 60%),
+  radial-gradient(800px 600px at 105% 10%,rgba(91,140,255,.10),transparent 60%),
+  radial-gradient(700px 500px at 50% 115%,rgba(34,81,214,.10),transparent 60%),
+  var(--bg);background-attachment:fixed}
+/* Cabecera fija con cristal */
+.top{position:sticky;top:0;z-index:12;margin:0 -16px;padding-left:16px;padding-right:16px;
+  background:linear-gradient(180deg,rgba(8,12,18,.92),rgba(8,12,18,.72));-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);
+  border-bottom:1px solid transparent;transition:border-color .2s}
+.top .tag.warn{background:rgba(252,211,77,.10);border:1px solid rgba(252,211,77,.25)}
+h2{font-size:26px;letter-spacing:.4px}
+h1{letter-spacing:.4px}
+/* Tarjetas: superficie con brillo arriba y sombra suave */
+.card{border-radius:var(--r);border-color:var(--glass-line);
+  background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0) 40%),var(--surface);
+  box-shadow:inset 0 1px 0 var(--hi),0 10px 30px -18px rgba(0,0,0,.8)}
+.hero{border-radius:24px;border-color:rgba(91,140,255,.18);
+  background:radial-gradient(420px 220px at 100% 0%,rgba(91,140,255,.22),transparent 70%),radial-gradient(300px 200px at 0% 100%,rgba(212,240,74,.10),transparent 70%),var(--hero);
+  box-shadow:inset 0 1px 0 var(--hi),0 20px 40px -24px rgba(34,81,214,.6)}
+/* Botones */
+.btn{border-radius:16px;padding:13px 18px;letter-spacing:.2px;
+  background-color:var(--lime);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 8px 22px -10px rgba(212,240,74,.55)}
+.btn-line{background-color:rgba(255,255,255,.03);border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--hi)}
+.btn-blue{background-color:var(--accent);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 22px -10px rgba(91,140,255,.6)}
+.btn-danger{background-color:rgba(255,122,122,.08);border:1px solid rgba(255,122,122,.28);box-shadow:none}
+.btn-sm{border-radius:12px}
+.btn:disabled{box-shadow:none}
+/* Campos */
+.input{border-radius:14px;border-color:var(--glass-line);background:rgba(255,255,255,.04);transition:border-color .15s,box-shadow .15s}
+.input:focus{outline:0;border-color:rgba(212,240,74,.55);box-shadow:0 0 0 4px rgba(212,240,74,.12)}
+.seg{border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--glass-line)}
+.seg button{border-radius:12px}
+.seg button.on{background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04));box-shadow:inset 0 1px 0 var(--hi),0 4px 12px -6px rgba(0,0,0,.7)}
+/* Días */
+.day{border-radius:16px;border-color:var(--glass-line);background:rgba(255,255,255,.035);min-width:58px;padding:9px 12px}
+.day b{font-size:22px}
+.day.on{background:linear-gradient(180deg,#E2F86A,var(--lime));box-shadow:0 8px 22px -8px rgba(212,240,74,.6)}
+/* Horas */
+.slots{gap:8px}
+.slot{border-radius:14px;padding:10px 4px;border-color:transparent;background:rgba(255,255,255,.035);font-family:var(--font-d);font-size:19px;letter-spacing:.3px}
+.slot small{font-family:var(--font-b);font-size:11px;letter-spacing:0;margin-top:1px}
+.slot.free{background:linear-gradient(180deg,rgba(212,240,74,.12),rgba(212,240,74,.04));border-color:rgba(212,240,74,.22)}
+.slot.open{background:linear-gradient(180deg,rgba(91,140,255,.18),rgba(91,140,255,.06));border-color:rgba(91,140,255,.35)}
+.slot.mine{background:rgba(74,222,128,.10);border-color:rgba(74,222,128,.35)}
+.slot.taken,.slot.past{opacity:.38;background:transparent;border:1px dashed rgba(255,255,255,.08)}
+/* Jugadores del partido */
+.pl{border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.04)}
+.pl.empty{border:1px dashed rgba(91,140,255,.35)}
+.tag{letter-spacing:.8px}
+.cdbox,.cajagrid>div{border-radius:14px}
+/* Ventanas */
+.sheet-bg{background:rgba(3,6,10,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.sheet{border-top-left-radius:28px;border-top-right-radius:28px;border-color:var(--glass-line);
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0) 120px),#0F1620;box-shadow:0 -20px 60px -20px rgba(0,0,0,.8)}
+.sheet .grab{background:rgba(255,255,255,.18)}
+/* Aviso */
+.toast{border-radius:99px;padding:11px 20px;background:rgba(238,242,247,.94);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 12px 30px -10px rgba(0,0,0,.7)}
+.toast.bad{background:#FF8A8A;color:#2A0608}
+/* Barra de pestañas flotante (móvil) */
+@media (max-width:899px){
+  #app{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+  .tabs{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:6px;border:1px solid var(--glass-line);border-radius:26px;
+    background:rgba(13,19,28,.78);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);
+    box-shadow:inset 0 1px 0 var(--hi),0 18px 40px -12px rgba(0,0,0,.85);max-width:480px;margin:0 auto}
+  .tabs button{border-radius:20px;padding:8px 2px 7px;font-size:11px;transition:color .2s,background .25s}
+  .tabs button.on{background:rgba(212,240,74,.12);color:var(--lime)}
+  .tabs button.on::after{display:none}
+  .toast{bottom:calc(98px + env(safe-area-inset-bottom,0px))}
+}
+@media (min-width:900px){
+  html body .tabs{background:rgba(11,17,25,.72);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-right-color:var(--glass-line)}
+  html body .tabs button{border-radius:16px}
+  html body .tabs button.on{background:rgba(212,240,74,.10)}
+  html body .sheet{border-radius:28px}
+  .top{margin:0;padding-left:0;padding-right:0}
+}
+@media (prefers-reduced-motion:no-preference){
+  .day.on,.slot.free,.btn{transition:transform .14s ease,filter .14s ease,box-shadow .2s,background .2s}
+}
 </style>
 </head>
 <body>
