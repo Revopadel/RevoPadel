@@ -193,6 +193,17 @@ div.bk{cursor:default}
   @keyframes qhop{0%,100%{transform:none}40%{transform:translateY(-14px) rotate(160deg)}}
   .qball svg{animation:qhop .8s cubic-bezier(.3,0,.4,1) .2s 2}
 }
+.av{border-radius:50%;object-fit:cover;flex:none;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;background:var(--surface2)}
+.av.ini{font-family:var(--font-d);font-weight:800;letter-spacing:.3px;border:1px solid}
+.mecard{display:flex;gap:16px;align-items:center}
+.mephoto{position:relative;flex:none}
+.mephoto .av.big{box-shadow:0 0 0 3px rgba(212,240,74,.35),0 10px 24px -10px rgba(0,0,0,.8)}
+.avload{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(8,12,18,.6)}
+.meinfo{display:flex;flex-direction:column;min-width:0}
+.mename{font-family:var(--font-d);font-size:26px;line-height:1;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plname{display:flex;align-items:center;gap:10px;min-width:0}
+.msgwho{display:flex!important;align-items:center;gap:6px;margin-bottom:2px}
+.msgwho .av{font-size:8px!important}
 .terms{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45;cursor:pointer}
 .terms input{width:20px;height:20px;flex:none;margin:1px 0 0;accent-color:var(--lime)}
 .terms a,.legal a{color:var(--ink)}
@@ -455,6 +466,33 @@ function celebrate(){if(window.matchMedia&&window.matchMedia('(prefers-reduced-m
       x.restore();});
     if(k<1)requestAnimationFrame(f);else c.remove();})(t0);
   if(navigator.vibrate)try{navigator.vibrate([18,40,18]);}catch(e){}}
+/* ===== Fotos de perfil ===== */
+var AVC=['#5B8CFF','#D4F04A','#4ADE80','#FCD34D','#FF9F6B','#C792EA','#5FD3E6'];
+function initials(n){n=String(n||'?').trim().split(/\s+/);return ((n[0]||'?')[0]+((n[1]||'')[0]||'')).toUpperCase();}
+function avatar(name,url,size,cls){size=size||32;var st='width:'+size+'px;height:'+size+'px;font-size:'+Math.round(size*.38)+'px';
+  if(url)return '<img class="av '+(cls||'')+'" src="'+esc(url)+'" alt="" width="'+size+'" height="'+size+'" loading="lazy" style="'+st+'">';
+  var h=0,t=String(name||'');for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;var c=AVC[h%AVC.length];
+  return '<span class="av ini '+(cls||'')+'" aria-hidden="true" style="'+st+';color:'+c+';background:'+c+'1F;border-color:'+c+'55">'+esc(initials(name))+'</span>';}
+function pav(p,size){return avatar(pname(p),p.profiles&&p.profiles.avatar_url,size);}
+/* Recorta en cuadrado, reduce a 320 px y vuelve a codificar (así se quitan los datos internos de la foto, como la ubicación) */
+async function squarePhoto(file){var bmp;try{bmp=await createImageBitmap(file,{imageOrientation:'from-image'});}catch(e){
+    bmp=await new Promise(function(ok,ko){var im=new Image();im.onload=function(){ok(im);};im.onerror=function(){ko(new Error('No se ha podido leer la imagen'));};im.src=URL.createObjectURL(file);});}
+  var w=bmp.width,h=bmp.height,side=Math.min(w,h),c=document.createElement('canvas');c.width=c.height=320;
+  c.getContext('2d').drawImage(bmp,(w-side)/2,(h-side)/2,side,side,0,0,320,320);
+  var blob=await new Promise(function(ok){c.toBlob(ok,'image/webp',.85);});
+  if(!blob||blob.type!=='image/webp')blob=await new Promise(function(ok){c.toBlob(ok,'image/jpeg',.86);});
+  return blob;}
+async function uploadAvatar(file){if(!file)return;if(!/^image\//.test(file.type)){toast('Elige una imagen',true);return;}
+  if(file.size>25*1024*1024){toast('Esa foto es demasiado grande',true);return;}
+  S.avBusy=true;render();
+  try{var blob=await squarePhoto(file),ext=blob.type==='image/webp'?'webp':'jpg',path=S.user.id+'/'+Date.now()+'.'+ext;
+    var up=await sb.storage.from('avatars').upload(path,blob,{contentType:blob.type,cacheControl:'31536000',upsert:false});if(up.error)throw up.error;
+    var url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl,old=S.me.avatar_url;
+    var r=await sb.from('profiles').update({avatar_url:url}).eq('id',S.user.id).select().single();if(r.error)throw r.error;
+    S.me=r.data;removeAvatarFile(old);toast('Foto actualizada');}
+  catch(e){toast(errMsg(e),true);}
+  S.avBusy=false;render();}
+function removeAvatarFile(url){var m=url&&/\/avatars\/(.+)$/.exec(url);if(m)sb.storage.from('avatars').remove([m[1]]).catch(function(){});}
 /* ===== Avisos ===== */
 var tt=null;
 function toast(msg,bad){var el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);}el.className='toast'+(bad?' bad':'');el.textContent=msg;el.hidden=false;void el.offsetWidth;el.classList.add('pop');clearTimeout(tt);tt=setTimeout(function(){el.hidden=true;},3200);}
@@ -479,7 +517,7 @@ async function loadBase(){
   S.club=res[0];S.courts=res[1];S.me=res[2];S.admin=res[3].some(function(a){return a.club_id===CLUB;});
   var n=nowM().day;if(!S.day)S.day=n;if(!S.panelDay)S.panelDay=n;
 }
-var SEL='id,court_id,day,start_min,kind,label,is_open,fixed_id,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,pay_deadline,booking_players(user_id,guest_name,paid_at,profiles(name,level))';
+var SEL='id,court_id,day,start_min,kind,label,is_open,fixed_id,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,pay_deadline,booking_players(user_id,guest_name,paid_at,profiles(name,level,avatar_url))';
 var FEE=0.40;
 /* Llama a una función del servidor (pagos) y devuelve su respuesta o un error legible */
 async function fx(name,body){var r=await sb.functions.invoke(name,{body:body});
@@ -585,8 +623,13 @@ function vMias(){var h='<h2 style="margin-top:4px">Mis reservas</h2>'+pushCard(t
   if(!S.mine.length)return h+'<div class="empty-state">No tienes reservas próximas.<br><br><button class="btn" data-act="tab" data-v="reservar">Reservar pista</button></div>';
   return h+'<div class="cardgrid">'+S.mine.map(matchCard).join('')+'</div>';}
 
-function vPerfil(){var me=S.me,opts=lvlOpts(me.level,true);
+function vPerfil(){var me=S.me,opts=lvlOpts(me.level,true),L=lvlInfo(me.level);
   return '<h2 style="margin-top:4px">Tu perfil</h2>'+
+  '<div class="card mecard"><div class="mephoto">'+avatar(me.name,me.avatar_url,84,'big')+(S.avBusy?'<span class="avload"><span class="spin"></span></span>':'')+'</div>'+
+  '<div class="meinfo"><b class="mename">'+esc(me.name)+'</b><span class="muted small">Nivel '+lvl(me.level)+' · '+esc(L.name)+'</span>'+
+  '<div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-act="pickPhoto"'+(S.avBusy?' disabled':'')+'>'+(me.avatar_url?'Cambiar foto':'Poner foto')+'</button>'+
+  (me.avatar_url?'<button type="button" class="btn btn-line btn-sm" data-act="delPhoto"'+(S.avBusy?' disabled':'')+'>Quitar</button>':'')+'</div></div>'+
+  '<input type="file" id="avatarFile" accept="image/*" hidden></div>'+
   '<form class="card col" data-form="profile"><div class="field"><label for="p-name">Nombre</label><input class="input" id="p-name" name="name" maxlength="40" value="'+esc(me.name)+'" required></div>'+
   '<div class="field"><label for="p-level">Nivel</label><select class="input" id="p-level" name="level">'+opts+'</select>'+
   '<div class="lvlhint" id="p-hint" aria-live="polite">'+lvlHint(me.level)+'</div><div class="row" style="gap:16px;flex-wrap:wrap"><button type="button" class="linkbtn" data-act="quizGo">Hacer el test de nivel</button><button type="button" class="linkbtn" data-act="levels">Ver la guía</button></div></div>'+
@@ -793,7 +836,7 @@ function vMatch(){var b=S.match;if(!b)return '<div class="center"><span class="s
   var pend=b.kind==='app'&&b.payment_state==='pending',mine=myRow(b),pc=paidCount(b);
   if(b.kind==='app')h+=pend?'<div class="card paystate pend"><b>Pendiente de pago · '+pc+' de '+ct.size+' pagados</b><span class="muted small">'+limitText(b)+'</span>'+cdHtml(b,true)+'</div>'
     :'<div class="card paystate ok"><b>Reserva confirmada</b><span class="muted small">'+(b.pay_mode==='full'?'La pista está pagada entera.':'Han pagado todos los jugadores.')+'</span></div>';
-  h+='<div class="list">';ps.forEach(function(p){h+='<div class="pl"><span>'+esc(pname(p))+(p.user_id===b.owner_id?' <span class="tag lime">Organiza</span>':'')+'</span><span class="small '+(p.paid_at?'paid':'muted')+'">'+(b.kind!=='app'?(p.profiles?'Nivel '+lvl(p.profiles.level):''):p.paid_at?'Pagado':'Sin pagar')+'</span></div>';});
+  h+='<div class="list">';ps.forEach(function(p){h+='<div class="pl"><span class="plname">'+pav(p,30)+'<span>'+esc(pname(p))+'</span>'+(p.user_id===b.owner_id?' <span class="tag lime">Organiza</span>':'')+'</span><span class="small '+(p.paid_at?'paid':'muted')+'">'+(b.kind!=='app'?(p.profiles?'Nivel '+lvl(p.profiles.level):''):p.paid_at?'Pagado':'Sin pagar')+'</span></div>';});
   for(var i=ps.length;i<ct.size;i++)h+='<div class="pl empty">Hueco libre</div>';h+='</div>';
   h+='<div class="col" style="margin-top:12px">';
   if(!past){
@@ -807,7 +850,7 @@ function vMatch(){var b=S.match;if(!b)return '<div class="center"><span class="s
   h+='</div>';
   if(me||S.admin){h+='<h3 style="margin-top:16px">Chat del partido</h3><div class="chat" id="chatBox">';
     if(!S.msgs.length)h+='<p class="muted small">Aún no hay mensajes. ¡Saluda!</p>';
-    S.msgs.forEach(function(m){var mine=m.user_id===S.user.id;h+='<div class="msg'+(mine?' me':'')+'">'+(mine?'':'<b>'+esc(m.profiles?m.profiles.name:'Jugador')+'</b>')+esc(m.body)+'</div>';});
+    S.msgs.forEach(function(m){var mine=m.user_id===S.user.id;h+='<div class="msg'+(mine?' me':'')+'">'+(mine?'':'<b class="msgwho">'+avatar(m.profiles?m.profiles.name:'Jugador',m.profiles&&m.profiles.avatar_url,18)+esc(m.profiles?m.profiles.name:'Jugador')+'</b>')+esc(m.body)+'</div>';});
     h+='</div>'+(me?'<form class="row" data-form="chat" style="margin-top:8px"><input class="input" name="body" maxlength="500" placeholder="Escribe un mensaje" autocomplete="off" aria-label="Mensaje"><button class="btn" type="submit">Enviar</button></form>':'');}
   return h;}
 
@@ -821,7 +864,7 @@ async function openMatch(id){stopPoll();S.sheet={type:'match',id:id};S.match=nul
 function keepChat(){var inp=document.querySelector('[data-form="chat"] input'),val=inp?inp.value:'',foc=inp&&document.activeElement===inp;renderSheet();var n=document.querySelector('[data-form="chat"] input');if(n){n.value=val;if(foc)n.focus();}}
 function stopPoll(){if(poll){clearInterval(poll);poll=null;}}
 async function loadMatch(id){var r=await q(sb.from('bookings').select(SEL).eq('id',id).eq('status','active').maybeSingle());S.match=r;
-  if(r&&(r.booking_players.some(function(p){return p.user_id===S.user.id;})||S.admin))S.msgs=await q(sb.from('match_messages').select('id,body,created_at,user_id,profiles(name)').eq('booking_id',id).order('created_at').limit(200));else S.msgs=[];}
+  if(r&&(r.booking_players.some(function(p){return p.user_id===S.user.id;})||S.admin))S.msgs=await q(sb.from('match_messages').select('id,body,created_at,user_id,profiles(name,avatar_url)').eq('booking_id',id).order('created_at').limit(200));else S.msgs=[];}
 /* Ir a la página de pago de Stripe */
 async function goPay(bookingId,kind){S.busy=true;renderSheet();render();
   try{var res=await fx('pago-crear',{booking_id:bookingId,kind:kind});
@@ -877,6 +920,10 @@ var A={
     S.sheet={type:'levels',back:prev&&prev.type==='book'?'book':'',prev:prev};renderSheet();},
   levelsBack:function(){S.sheet=S.sheet.prev;renderSheet();},
   quiz:function(){S.sheet={type:'quizIntro'};renderSheet();},
+  pickPhoto:function(){var i=document.getElementById('avatarFile');if(i){i.value='';i.click();}},
+  delPhoto:async function(){var old=S.me.avatar_url;S.avBusy=true;render();
+    var r=await sb.from('profiles').update({avatar_url:null}).eq('id',S.user.id).select().single();S.avBusy=false;
+    if(r.error){toast(errMsg(r.error),true);render();return;}S.me=r.data;removeAvatarFile(old);toast('Foto quitada');render();},
   quizGo:function(){S.busy=false;S.sheet={type:'quiz',i:0,a:[]};renderSheet();},
   quizBack:function(){if(S.sheet.i>0){S.sheet.i--;renderSheet();}},
   quizAns:function(el){var s=S.sheet,k=+el.dataset.v;s.a[s.i]=k;buzz();el.classList.add('on');
@@ -989,6 +1036,7 @@ document.addEventListener('click',function(ev){
   if(el.tagName!=='INPUT')ev.preventDefault();
   fn(el,ev);});
 document.addEventListener('change',function(ev){var t=ev.target;
+  if(t.id==='avatarFile'&&t.files&&t.files[0]){uploadAvatar(t.files[0]);return;}
   if(t.id==='p-level'){var hn=document.getElementById('p-hint');if(hn)hn.innerHTML=lvlHint(t.value);}
   if(t.id==='b-min'||t.id==='b-max'){var a=document.getElementById('b-min'),b=document.getElementById('b-max'),bh=document.getElementById('b-hint');
     if(a&&b&&Number(a.value)>Number(b.value)){if(t===a)b.value=a.value;else a.value=b.value;}
