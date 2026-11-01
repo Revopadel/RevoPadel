@@ -204,6 +204,18 @@ div.bk{cursor:default}
 .plname{display:flex;align-items:center;gap:10px;min-width:0}
 .msgwho{display:flex!important;align-items:center;gap:6px;margin-bottom:2px}
 .msgwho .av{font-size:8px!important}
+.fcount{display:flex;gap:14px;margin-top:6px;font-size:13px;color:var(--muted)}
+.fcount button{background:none;border:0;padding:0;color:var(--muted);font:inherit;cursor:pointer}
+.fcount b{color:var(--ink);font-family:var(--font-d);font-size:17px;margin-right:2px}
+.plbtn{background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.findcard{display:flex;gap:14px;align-items:center;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.findic{width:40px;height:40px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(91,140,255,.14);color:var(--accent);flex:none}
+.friends{display:flex;align-items:center;gap:0;margin-top:10px;font-size:12.5px;color:var(--lime);font-weight:600}
+.friends .av{margin-right:-6px;box-shadow:0 0 0 2px var(--surface)}
+.friends span:last-child{margin-left:12px}
+.friends .av.ini{font-size:9px!important}
+.pcard{padding-top:6px}
+.pcard .av.big{box-shadow:0 0 0 3px rgba(212,240,74,.35)}
 .terms{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45;cursor:pointer}
 .terms input{width:20px;height:20px;flex:none;margin:1px 0 0;accent-color:var(--lime)}
 .terms a,.legal a{color:var(--ink)}
@@ -493,6 +505,12 @@ async function uploadAvatar(file){if(!file)return;if(!/^image\//.test(file.type)
   catch(e){toast(errMsg(e),true);}
   S.avBusy=false;render();}
 function removeAvatarFile(url){var m=url&&/\/avatars\/(.+)$/.exec(url);if(m)sb.storage.from('avatars').remove([m[1]]).catch(function(){});}
+/* ===== Seguidores ===== */
+async function followCounts(id){var a=await sb.from('follows').select('follower_id',{count:'exact',head:true}).eq('followee_id',id);
+  var b=await sb.from('follows').select('followee_id',{count:'exact',head:true}).eq('follower_id',id);return {followers:a.count||0,following:b.count||0};}
+function personRow(pr){var me=pr.id===S.user.id,fol=S.following&&S.following[pr.id];
+  return '<div class="pl"><button type="button" class="plname plbtn" data-act="player" data-v="'+pr.id+'">'+avatar(pr.name,pr.avatar_url,34)+'<span>'+esc(pr.name)+'<br><span class="muted small">Nivel '+lvl(pr.level)+'</span></span></button>'+
+    (me?'<span class="muted small">Tú</span>':'<button class="btn btn-sm '+(fol?'btn-line':'')+'" data-act="toggleFollow" data-v="'+pr.id+'">'+(fol?'Siguiendo':'Seguir')+'</button>')+'</div>';}
 /* ===== Avisos ===== */
 var tt=null;
 function toast(msg,bad){var el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);}el.className='toast'+(bad?' bad':'');el.textContent=msg;el.hidden=false;void el.offsetWidth;el.classList.add('pop');clearTimeout(tt);tt=setTimeout(function(){el.hidden=true;},3200);}
@@ -515,6 +533,7 @@ async function loadBase(){
     q(sb.from('club_admins').select('club_id').eq('user_id',S.user.id))
   ]);
   S.club=res[0];S.courts=res[1];S.me=res[2];S.admin=res[3].some(function(a){return a.club_id===CLUB;});
+  try{var fl=await q(sb.from('follows').select('followee_id').eq('follower_id',S.user.id));S.following={};fl.forEach(function(f){S.following[f.followee_id]=1;});}catch(e){S.following={};}
   var n=nowM().day;if(!S.day)S.day=n;if(!S.panelDay)S.panelDay=n;
 }
 var SEL='id,court_id,day,start_min,kind,label,is_open,fixed_id,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,pay_deadline,booking_players(user_id,guest_name,paid_at,profiles(name,level,avatar_url))';
@@ -531,6 +550,7 @@ async function loadTab(){
     S.mineIds=await myIds(S.day,S.day);}
   else if(S.tab==='partidos'){var rows=await q(sb.from('bookings').select(SEL).eq('club_id',CLUB).eq('status','active').eq('is_open',true).gte('day',n).order('day').order('start_min'));
     S.open=rows.filter(function(b){return !isPast(b.day,b.start_min);});}
+  else if(S.tab==='perfil'){S.fc=await followCounts(S.user.id);}
   else if(S.tab==='mias'){var rows2=await q(sb.from('bookings').select(SEL).eq('status','active').gte('day',n).order('day').order('start_min'));
     S.mine=rows2.filter(function(b){return !isPast(b.day,b.start_min)&&b.booking_players.some(function(p){return p.user_id===S.user.id;});});}
   else if(S.tab==='club'&&S.admin){S.panel=await q(sb.from('bookings').select(SEL).eq('club_id',CLUB).eq('status','active').eq('day',S.panelDay));
@@ -612,11 +632,15 @@ function matchCard(b){var ct=court(b.court_id),n=b.booking_players.length,me=b.b
     '<div class="muted small" style="margin-top:4px">'+esc(ct.name)+(b.lvl_min!=null?' · nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):'')+(owner?' · organiza '+esc(pname(owner)):'')+'</div>'+
     (cdHtml(b)?'<div style="margin-top:8px">'+cdHtml(b)+'</div>':'')+
     (me?'<div class="small" style="margin-top:6px;color:var(--ok);font-weight:700">'+(b.owner_id===S.user.id?'Organizas tú':'Estás apuntado')+'</div>':'')+
-    '</button>';}
+    friendsLine(b)+'</button>';}
+function friendsIn(b){return b.booking_players.filter(function(p){return p.user_id&&S.following&&S.following[p.user_id];});}
+function friendsLine(b){var f=friendsIn(b);if(!f.length)return '';
+  return '<div class="friends">'+f.slice(0,3).map(function(p){return pav(p,22);}).join('')+'<span>Juega'+(f.length>1?'n ':' ')+esc(f.map(pname).slice(0,2).join(' y '))+(f.length>2?' y más':'')+', a quien'+(f.length>1?'es':'')+' sigues</span></div>';}
 
 function vPartidos(){var h='<h2 style="margin-top:4px">Partidos abiertos</h2><p class="muted small" style="margin:4px 0 0">Partidos del Olimpo a los que les falta gente. Apúntate y habla con el resto en el chat.</p>';
   var list=S.open.filter(function(b){return b.booking_players.length<court(b.court_id).size||b.booking_players.some(function(p){return p.user_id===S.user.id;});});
   if(!list.length)return h+'<div class="empty-state">No hay partidos abiertos ahora mismo.<br><br><button class="btn" data-act="tab" data-v="reservar">Reserva y abre uno</button></div>';
+  list=list.slice().sort(function(a,b){return (friendsIn(b).length?1:0)-(friendsIn(a).length?1:0);});
   return h+'<div class="cardgrid">'+list.map(matchCard).join('')+'</div>';}
 
 function vMias(){var h='<h2 style="margin-top:4px">Mis reservas</h2>'+pushCard(true);
@@ -627,9 +651,11 @@ function vPerfil(){var me=S.me,opts=lvlOpts(me.level,true),L=lvlInfo(me.level);
   return '<h2 style="margin-top:4px">Tu perfil</h2>'+
   '<div class="card mecard"><div class="mephoto">'+avatar(me.name,me.avatar_url,84,'big')+(S.avBusy?'<span class="avload"><span class="spin"></span></span>':'')+'</div>'+
   '<div class="meinfo"><b class="mename">'+esc(me.name)+'</b><span class="muted small">Nivel '+lvl(me.level)+' · '+esc(L.name)+'</span>'+
+  '<div class="fcount"><button type="button" data-act="follows" data-v="followers"><b>'+(S.fc?S.fc.followers:'–')+'</b> '+(S.fc&&S.fc.followers===1?'seguidor':'seguidores')+'</button><button type="button" data-act="follows" data-v="following"><b>'+(S.fc?S.fc.following:'–')+'</b> siguiendo</button></div>'+
   '<div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-act="pickPhoto"'+(S.avBusy?' disabled':'')+'>'+(me.avatar_url?'Cambiar foto':'Poner foto')+'</button>'+
   (me.avatar_url?'<button type="button" class="btn btn-line btn-sm" data-act="delPhoto"'+(S.avBusy?' disabled':'')+'>Quitar</button>':'')+'</div></div>'+
   '<input type="file" id="avatarFile" accept="image/*" hidden></div>'+
+  '<button type="button" class="card findcard" data-act="findPlayers"><span class="findic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span><b>Buscar jugadores</b><br><span class="muted small">Sigue a tus compañeros y verás primero sus partidos abiertos</span></span></button>'+
   '<form class="card col" data-form="profile"><div class="field"><label for="p-name">Nombre</label><input class="input" id="p-name" name="name" maxlength="40" value="'+esc(me.name)+'" required></div>'+
   '<div class="field"><label for="p-level">Nivel</label><select class="input" id="p-level" name="level">'+opts+'</select>'+
   '<div class="lvlhint" id="p-hint" aria-live="polite">'+lvlHint(me.level)+'</div><div class="row" style="gap:16px;flex-wrap:wrap"><button type="button" class="linkbtn" data-act="quizGo">Hacer el test de nivel</button><button type="button" class="linkbtn" data-act="levels">Ver la guía</button></div></div>'+
@@ -783,6 +809,23 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     '<button class="btn btn-block" style="margin-top:14px" data-act="quizSave"'+(S.busy?' disabled':'')+'>'+(S.busy?'Guardando…':'Guardar nivel '+lvl(s.lv))+'</button>'+
     '<button class="btn btn-line btn-block" style="margin-top:8px" data-act="quizGo">Repetir el test</button>'+
     '<p class="muted small" style="margin-top:12px">Es una estimación: si juegas con gente que te gana o pierde siempre, cámbialo en Perfil.</p></div>';}
+  else if(s.type==='player'){var pr=s.p;
+    if(!pr)h='<p class="muted"><span class="spin"></span> Cargando…</p>';
+    else{var fol=S.following&&S.following[pr.id],PL=lvlInfo(pr.level);
+      h='<div class="center pcard">'+avatar(pr.name,pr.avatar_url,96,'big')+'<h2 style="margin-top:12px">'+esc(pr.name)+'</h2><p class="muted small" style="margin:4px 0 0">Nivel '+lvl(pr.level)+' · '+esc(PL.name)+(PL.cat?' · ≈ '+PL.cat:'')+'</p>'+
+      '<div class="fcount center" style="justify-content:center;margin-top:10px"><span><b>'+s.c.followers+'</b> '+(s.c.followers===1?'seguidor':'seguidores')+'</span><span><b>'+s.c.following+'</b> siguiendo</span></div>'+
+      (s.follows_me?'<p class="small" style="margin:8px 0 0;color:var(--lime)">Te sigue</p>':'')+
+      '<button class="btn btn-block '+(fol?'btn-line':'')+'" style="margin-top:16px" data-act="toggleFollow" data-v="'+pr.id+'"'+(S.busy?' disabled':'')+'>'+(fol?'Siguiendo ✓':(s.follows_me?'Seguir tú también':'Seguir'))+'</button>'+
+      '<button class="btn btn-line btn-block" style="margin-top:8px" data-act="'+(s.prev?'sheetBack':'close')+'">'+(s.prev?'Volver':'Cerrar')+'</button></div>';}}
+  else if(s.type==='follows'){
+    h='<h2>'+(s.kind==='followers'?'Tus seguidores':'A quién sigues')+'</h2><div class="seg" style="margin:12px 0"><button data-act="follows" data-v="followers" class="'+(s.kind==='followers'?'on':'')+'">Seguidores</button><button data-act="follows" data-v="following" class="'+(s.kind==='following'?'on':'')+'">Siguiendo</button></div>'+
+      (!s.list?'<p class="muted"><span class="spin"></span> Cargando…</p>':!s.list.length?'<p class="muted">'+(s.kind==='followers'?'Aún no te sigue nadie. Juega partidos abiertos y te encontrarán.':'Aún no sigues a nadie. Busca a tus compañeros de pádel.')+'</p>':
+      '<div class="list">'+s.list.map(personRow).join('')+'</div>')+
+      '<button class="btn btn-line btn-block" style="margin-top:12px" data-act="close">Cerrar</button>';}
+  else if(s.type==='find'){
+    h='<h2>Buscar jugadores</h2><form data-form="find" class="row" style="margin:12px 0"><input class="input" name="q" id="findQ" placeholder="Nombre del jugador" minlength="2" maxlength="40" autocomplete="off" value="'+esc(s.q||'')+'" required><button class="btn" type="submit">Buscar</button></form>'+
+      (s.loading?'<p class="muted"><span class="spin"></span> Buscando…</p>':s.list?(s.list.length?'<div class="list">'+s.list.map(personRow).join('')+'</div>':'<p class="muted">No hay nadie con ese nombre.</p>'):'<p class="muted small">Escribe al menos 2 letras.</p>')+
+      '<button class="btn btn-line btn-block" style="margin-top:12px" data-act="close">Cerrar</button>';}
   else if(s.type==='levels'){var mine=lvlInfo(S.me.level);
     h='<h2>Guía de niveles</h2><p class="muted small" style="margin:6px 0 12px">Elige el que más se parezca a cómo juegas. Las categorías son orientativas: cada club y cada liga las ajusta a su manera.</p><div class="list">'+
     LEVELS.map(function(L){var on=L===mine;return '<button type="button" class="card lvrow'+(on?' on':'')+'" data-act="pickLevel" data-v="'+L.from.toFixed(1)+'">'+
@@ -836,7 +879,7 @@ function vMatch(){var b=S.match;if(!b)return '<div class="center"><span class="s
   var pend=b.kind==='app'&&b.payment_state==='pending',mine=myRow(b),pc=paidCount(b);
   if(b.kind==='app')h+=pend?'<div class="card paystate pend"><b>Pendiente de pago · '+pc+' de '+ct.size+' pagados</b><span class="muted small">'+limitText(b)+'</span>'+cdHtml(b,true)+'</div>'
     :'<div class="card paystate ok"><b>Reserva confirmada</b><span class="muted small">'+(b.pay_mode==='full'?'La pista está pagada entera.':'Han pagado todos los jugadores.')+'</span></div>';
-  h+='<div class="list">';ps.forEach(function(p){h+='<div class="pl"><span class="plname">'+pav(p,30)+'<span>'+esc(pname(p))+'</span>'+(p.user_id===b.owner_id?' <span class="tag lime">Organiza</span>':'')+'</span><span class="small '+(p.paid_at?'paid':'muted')+'">'+(b.kind!=='app'?(p.profiles?'Nivel '+lvl(p.profiles.level):''):p.paid_at?'Pagado':'Sin pagar')+'</span></div>';});
+  h+='<div class="list">';ps.forEach(function(p){var tap=p.user_id&&p.user_id!==S.user.id;h+='<div class="pl"><'+(tap?'button type="button" class="plname plbtn" data-act="player" data-v="'+p.user_id+'"':'span class="plname"')+'>'+pav(p,30)+'<span>'+esc(pname(p))+(tap&&S.following&&S.following[p.user_id]?' <span class="tag lime">Sigues</span>':'')+'</span>'+(tap?'</button>':'')+(p.user_id===b.owner_id?' <span class="tag lime">Organiza</span>':'')+'</span><span class="small '+(p.paid_at?'paid':'muted')+'">'+(b.kind!=='app'?(p.profiles?'Nivel '+lvl(p.profiles.level):''):p.paid_at?'Pagado':'Sin pagar')+'</span></div>';});
   for(var i=ps.length;i<ct.size;i++)h+='<div class="pl empty">Hueco libre</div>';h+='</div>';
   h+='<div class="col" style="margin-top:12px">';
   if(!past){
@@ -920,6 +963,27 @@ var A={
     S.sheet={type:'levels',back:prev&&prev.type==='book'?'book':'',prev:prev};renderSheet();},
   levelsBack:function(){S.sheet=S.sheet.prev;renderSheet();},
   quiz:function(){S.sheet={type:'quizIntro'};renderSheet();},
+  player:async function(el){var id=el.dataset.v,prev=S.sheet&&S.sheet.type!=='player'?S.sheet:(S.sheet&&S.sheet.prev)||null;stopPoll();
+    S.sheet={type:'player',id:id,prev:prev};renderSheet();
+    try{var r=await Promise.all([q(sb.from('profiles').select('id,name,level,avatar_url').eq('id',id).single()),followCounts(id),
+      q(sb.from('follows').select('follower_id').eq('follower_id',id).eq('followee_id',S.user.id))]);
+      if(S.sheet&&S.sheet.id===id){S.sheet.p=r[0];S.sheet.c=r[1];S.sheet.follows_me=r[2].length>0;renderSheet();}}
+    catch(e){toast(errMsg(e),true);}},
+  sheetBack:function(){var p=S.sheet&&S.sheet.prev;S.sheet=p||null;renderSheet();if(p&&p.type==='match')openMatch(p.id);},
+  toggleFollow:async function(el){var id=el.dataset.v,was=!!(S.following&&S.following[id]);if(!S.following)S.following={};
+    if(was)delete S.following[id];else S.following[id]=1;buzz();
+    var s0=S.sheet;if(s0&&s0.type==='player'&&s0.c)s0.c.followers+=was?-1:1;renderSheet();
+    var r=was?await sb.from('follows').delete().eq('follower_id',S.user.id).eq('followee_id',id)
+              :await sb.from('follows').insert({follower_id:S.user.id,followee_id:id});
+    if(r.error){if(was)S.following[id]=1;else delete S.following[id];if(s0&&s0.c)s0.c.followers+=was?1:-1;renderSheet();toast(errMsg(r.error),true);return;}
+    if(S.fc){S.fc.following+=was?-1:1;}if(!was)toast('Ahora sigues a '+(s0&&s0.p&&s0.p.id===id?s0.p.name:'este jugador'));
+    if(S.tab==='perfil'||S.tab==='partidos')render();},
+  follows:async function(el){var kind=el.dataset.v;S.sheet={type:'follows',kind:kind};renderSheet();
+    try{var rows=kind==='followers'?await q(sb.from('follows').select('profiles!follows_follower_id_fkey(id,name,level,avatar_url)').eq('followee_id',S.user.id).order('created_at',{ascending:false}).limit(200))
+                                   :await q(sb.from('follows').select('profiles!follows_followee_id_fkey(id,name,level,avatar_url)').eq('follower_id',S.user.id).order('created_at',{ascending:false}).limit(200));
+      if(S.sheet&&S.sheet.type==='follows'&&S.sheet.kind===kind){S.sheet.list=rows.map(function(x){return x.profiles;}).filter(Boolean);renderSheet();}}
+    catch(e){toast(errMsg(e),true);}},
+  findPlayers:function(){S.sheet={type:'find'};renderSheet();setTimeout(function(){var i=document.getElementById('findQ');if(i)i.focus();},350);},
   pickPhoto:function(){var i=document.getElementById('avatarFile');if(i){i.value='';i.click();}},
   delPhoto:async function(){var old=S.me.avatar_url;S.avBusy=true;render();
     var r=await sb.from('profiles').update({avatar_url:null}).eq('id',S.user.id).select().single();S.avBusy=false;
@@ -1023,6 +1087,11 @@ var FORMS={
         if(S.admin){toast('Panel del club activado');S.tab='club';S.busy=false;render();await refresh();return;}}
     }catch(e){toast(errMsg(e),true);}
     S.busy=false;render();},
+  find:async function(f){var qv=String(new FormData(f).get('q')||'').trim().replace(/[%_,()]/g,'');if(qv.length<2)return;
+    S.sheet={type:'find',q:qv,loading:true};renderSheet();
+    try{var r=await q(sb.from('profiles').select('id,name,level,avatar_url').ilike('name','%'+qv+'%').neq('id',S.user.id).order('name').limit(25));
+      if(S.sheet&&S.sheet.type==='find'&&S.sheet.q===qv){S.sheet.loading=false;S.sheet.list=r;renderSheet();}}
+    catch(e){if(S.sheet)S.sheet.loading=false;renderSheet();toast(errMsg(e),true);}},
   profile:async function(f){var d=new FormData(f),name=String(d.get('name')||'').trim(),level=Number(d.get('level'));
     if(!name){toast('Pon tu nombre',true);return;}
     var r=await sb.from('profiles').update({name:name,level:level}).eq('id',S.user.id).select().single();
