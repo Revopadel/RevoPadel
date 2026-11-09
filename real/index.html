@@ -398,6 +398,66 @@ h1{letter-spacing:.4px}
 @media (prefers-reduced-motion:no-preference){
   .day.on,.slot.free,.btn{transition:transform .14s ease,filter .14s ease,box-shadow .2s,background .2s}
 }
+
+/* ===== Más atractiva: saludo, tarjetas de partido, esqueletos ===== */
+.topr{display:flex;align-items:center;gap:10px}
+.topav{background:none;border:0;padding:0;cursor:pointer;border-radius:50%;display:flex;box-shadow:0 0 0 2px rgba(212,240,74,.45)}
+.home{display:flex;flex-direction:column;gap:12px;margin:6px 0 16px}
+.home-hi{display:flex;flex-direction:column;line-height:1.05}
+.home-hi b{font-family:var(--font-d);font-size:40px;text-transform:uppercase;letter-spacing:.4px;
+  background:linear-gradient(100deg,var(--ink) 30%,var(--lime) 60%,var(--ink) 90%);background-size:220% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent}
+.home-next{position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer;border-radius:22px;padding:14px 16px;
+  border:1px solid rgba(91,140,255,.28);background:radial-gradient(300px 160px at 100% 0%,rgba(91,140,255,.28),transparent 70%),radial-gradient(240px 140px at 0% 100%,rgba(212,240,74,.10),transparent 70%),var(--hero);
+  box-shadow:inset 0 1px 0 var(--hi),0 18px 36px -22px rgba(34,81,214,.7)}
+.home-next.none{cursor:default;border-style:dashed;background:rgba(255,255,255,.03);box-shadow:none}
+.hn-when{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:78px;padding:8px 10px;border-radius:16px;background:rgba(8,12,18,.45)}
+.hn-when small{font-size:11px;font-weight:700;color:var(--lime);text-transform:uppercase;letter-spacing:.6px;white-space:nowrap}
+.hn-when b{font-family:var(--font-d);font-size:30px;line-height:1}
+.hn-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;align-items:flex-start;font-size:13px;color:var(--muted)}
+.hn-info>b{color:var(--ink);font-size:15px}
+.hn-go{font-size:28px;color:var(--muted);line-height:1}
+.daysum{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 2px}
+.daysum>b{margin-right:auto}
+.chip{display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:12.5px;font-weight:600;border-radius:99px;padding:5px 11px;border:1px solid var(--glass-line);background:rgba(255,255,255,.04);color:var(--muted)}
+.chip b{font-family:var(--font-d);font-size:16px;line-height:1}
+.chip.free b{color:var(--lime)}
+.chip.open{cursor:pointer;color:#A9C2FF;border-color:rgba(91,140,255,.35);background:rgba(91,140,255,.10)}
+.chip .spin{width:14px;height:14px}
+.courts.fetching{opacity:.45;pointer-events:none;transition:opacity .15s}
+/* Tarjeta de partido */
+.mc{display:flex;gap:14px;align-items:stretch;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.mc.mine{border-color:rgba(74,222,128,.28)}
+.mc-when{flex:none;width:74px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:16px;background:rgba(255,255,255,.045);padding:8px 4px}
+.mc-when small{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.mc-when b{font-family:var(--font-d);font-size:28px;line-height:1}
+.mc-when em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--lime);white-space:nowrap}
+.mc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.seats{display:flex;align-items:center}
+.seat{display:flex;border-radius:50%;margin-right:-7px;box-shadow:0 0 0 2px var(--surface)}
+.seat.paid{box-shadow:0 0 0 2px var(--ok)}
+.seat.free{width:28px;height:28px;align-items:center;justify-content:center;border:1.5px dashed rgba(91,140,255,.55);color:var(--accent);font-weight:700;font-size:14px;background:var(--surface);box-shadow:none;margin-right:-5px}
+.seat .av.ini{font-size:10px!important}
+.mc .cd{font-size:12px}
+/* Vacíos con dibujo y esqueletos */
+.empty-state{display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 12px}
+.empty-state p{margin:0;line-height:1.5}
+.art{width:170px;height:auto}
+.skel{display:flex;flex-direction:column;gap:12px;padding:18px}
+.skel i{display:block;height:14px;border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.05) 75%);background-size:300% 100%}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
+  .skel i{animation:shimmer 1.3s linear infinite}
+  @keyframes nameshine{from{background-position:100% 0}to{background-position:0 0}}
+  #app.enter .home-hi b{animation:nameshine 1.4s ease .15s both}
+  @keyframes artball{0%,100%{transform:translate(0,0)}25%{transform:translate(-66px,22px)}50%{transform:translate(-30px,34px)}75%{transform:translate(-4px,14px)}}
+  .artball{animation:artball 3.2s ease-in-out infinite}
+  @keyframes seatin{from{transform:scale(0)}to{transform:scale(1)}}
+  #app.enter .seat{animation:seatin .35s cubic-bezier(.2,1.5,.4,1) both}
+  #app.enter .seat:nth-child(2){animation-delay:.06s}#app.enter .seat:nth-child(3){animation-delay:.12s}#app.enter .seat:nth-child(4){animation-delay:.18s}
+  .seat.free{animation:seat 2s ease-in-out infinite}
+  .home-next:not(.none):active{transform:scale(.985)}
+  .home-next{transition:transform .14s ease}
+}
 </style>
 </head>
 <body>
@@ -415,7 +475,7 @@ var REVO_EMAIL='revopadel.app@gmail.com';
 var sb=window.supabase.createClient(SB_URL,SB_KEY);
 
 /* ===== Estado ===== */
-var S={user:null,me:null,club:null,courts:[],admin:false,tab:'reservar',day:null,panelDay:null,
+var S={loaded:{},next:null,fetching:false,user:null,me:null,club:null,courts:[],admin:false,tab:'reservar',day:null,panelDay:null,
   occ:[],open:[],mine:[],panel:[],authMode:'login',loading:true,sheet:null,match:null,msgs:[],busy:false};
 var poll=null;
 
@@ -546,8 +606,11 @@ function paidCount(b){return b.booking_players.filter(function(p){return !!p.pai
 function myRow(b){return b.booking_players.filter(function(p){return p.user_id===S.user.id;})[0];}
 async function loadTab(){
   var n=nowM().day;
-  if(S.tab==='reservar'){S.occ=await q(sb.rpc('occupied_slots_v2',{p_club:CLUB,p_from:S.day,p_to:S.day}));
-    S.mineIds=await myIds(S.day,S.day);}
+  var tab0=S.tab;
+  if(S.tab==='reservar'){var day0=S.day,occ0=await q(sb.rpc('occupied_slots_v2',{p_club:CLUB,p_from:day0,p_to:day0}));
+    var up=await myUpcoming(n);if(S.day!==day0)return;S.occ=occ0;
+    S.mineIds=up.filter(function(x){return x.bookings.day===day0;}).map(function(x){return x.booking_id;});
+    S.next=up.map(function(x){return x.bookings;}).filter(function(b){return !isPast(b.day,b.start_min);}).sort(function(a,b){return a.day<b.day?-1:a.day>b.day?1:a.start_min-b.start_min;})[0]||null;}
   else if(S.tab==='partidos'){var rows=await q(sb.from('bookings').select(SEL).eq('club_id',CLUB).eq('status','active').eq('is_open',true).gte('day',n).order('day').order('start_min'));
     S.open=rows.filter(function(b){return !isPast(b.day,b.start_min);});}
   else if(S.tab==='perfil'){S.fc=await followCounts(S.user.id);}
@@ -556,10 +619,12 @@ async function loadTab(){
   else if(S.tab==='club'&&S.admin){S.panel=await q(sb.from('bookings').select(SEL).eq('club_id',CLUB).eq('status','active').eq('day',S.panelDay));
     var cd=S.panelDay;fx('club-ajustes',{club_id:CLUB,action:'caja',day:cd}).then(function(r){if(S.panelDay===cd){S.caja=r;if(S.tab==='club')render();}}).catch(function(){S.caja=null;});
     if(!S.cobros||S.cobros.stale){S.cobros={loading:true};fx('club-stripe',{club_id:CLUB,action:'estado'}).then(function(r){S.cobros=r||{};if(S.tab==='club')render();}).catch(function(e){S.cobros={error:errMsg(e)};if(S.tab==='club')render();});}}
+  S.loaded[tab0]=true;
 }
+async function myUpcoming(from){return await q(sb.from('booking_players').select('booking_id,bookings!inner(id,day,start_min,court_id,status,payment_state,kind,is_open)').eq('user_id',S.user.id).gte('bookings.day',from).eq('bookings.status','active'));}
 async function myIds(from,to){var r=await q(sb.from('booking_players').select('booking_id,bookings!inner(day,status)').eq('user_id',S.user.id).gte('bookings.day',from).lte('bookings.day',to).eq('bookings.status','active'));
   return r.map(function(x){return x.booking_id;});}
-async function refresh(){try{await loadTab();}catch(e){toast(errMsg(e),true);}var a=S.enter;S.enter=false;render(a);}
+async function refresh(){try{await loadTab();}catch(e){toast(errMsg(e),true);S.loaded[S.tab]=true;}S.fetching=false;var a=S.enter;S.enter=false;render(a);}
 
 /* ===== Pintar ===== */
 var ICON={
@@ -570,7 +635,7 @@ var ICON={
   club:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>'
 };
 var TABNAME={reservar:'Reservar',partidos:'Partidos',mias:'Mis reservas',perfil:'Perfil',club:'Club'};
-function header(){return '<div class="top"><svg class="logo" role="img" aria-label="Revo" width="94" height="40" viewBox="0 0 400 170"><text x="0" y="142" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-style="italic" font-weight="800" font-size="164" fill="currentColor" textLength="236" lengthAdjust="spacingAndGlyphs">REV</text><circle cx="320" cy="85" r="66" fill="#D4F04A"></circle><path d="M278 35C302 62 302 108 278 135M362 35C338 62 338 108 362 135" fill="none" stroke="#0A0F05" stroke-width="9" stroke-linecap="round"></path></svg><span class="tag warn">Versión de prueba</span></div>';}
+function header(){return '<div class="top"><svg class="logo" role="img" aria-label="Revo" width="94" height="40" viewBox="0 0 400 170"><text x="0" y="142" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-style="italic" font-weight="800" font-size="164" fill="currentColor" textLength="236" lengthAdjust="spacingAndGlyphs">REV</text><circle cx="320" cy="85" r="66" fill="#D4F04A"></circle><path d="M278 35C302 62 302 108 278 135M362 35C338 62 338 108 362 135" fill="none" stroke="#0A0F05" stroke-width="9" stroke-linecap="round"></path></svg><span class="topr"><span class="tag warn">Versión de prueba</span>'+(S.me&&S.user?'<button type="button" class="topav" data-act="tab" data-v="perfil" aria-label="Tu perfil">'+avatar(S.me.name,S.me.avatar_url,34)+'</button>':'')+'</span></div>';}
 
 function render(anim){
   var app=document.getElementById('app'),tabs=document.getElementById('tabs');
@@ -606,12 +671,33 @@ function dayChips(sel,act){var n=nowM().day,h='<div class="days">';
   for(var i=0;i<14;i++){var d=addDays(n,i);h+='<button class="day'+(d===sel?' on':'')+'" data-act="'+act+'" data-v="'+d+'"><span>'+(i===0?'Hoy':dfmt(d,{weekday:'short'}).replace('.',''))+'</span><b>'+dfmt(d,{day:'numeric'})+'</b></button>';}
   return h+'</div>';}
 
+/* ===== Piezas visuales ===== */
+function inTime(b){var n=nowM(),d=Math.round((new Date(b.day+'T12:00:00Z')-new Date(n.day+'T12:00:00Z'))/864e5),m=d*1440+b.start_min-n.min;
+  if(m<=0)return 'Ahora';if(m<60)return 'En '+m+' min';if(d===0)return 'En '+Math.round(m/60)+' h';if(d===1)return 'Mañana';return 'En '+d+' días';}
+function hello(){var h=Math.floor(nowM().min/60);return h<6?'Buenas noches':h<13?'Buenos días':h<21?'Buenas tardes':'Buenas noches';}
+var ART={
+  court:'<svg class="art" viewBox="0 0 160 110" aria-hidden="true"><rect x="12" y="14" width="136" height="82" rx="10" fill="rgba(91,140,255,.10)" stroke="rgba(91,140,255,.45)" stroke-width="2"/><path d="M80 14v82M12 55h136M46 14v82M114 14v82" stroke="rgba(238,242,247,.16)" stroke-width="2"/><path d="M80 8v94" stroke="rgba(238,242,247,.5)" stroke-width="3" stroke-linecap="round"/><g class="artball"><circle cx="112" cy="40" r="10" fill="#D4F04A"/><path d="M105.5 34c3 3 3 9 0 12M118.5 34c-3 3-3 9 0 12" fill="none" stroke="#0A0F05" stroke-width="1.6" stroke-linecap="round"/></g></svg>'};
+function emptyState(txt,btn,tab){return '<div class="empty-state">'+ART.court+'<p>'+txt+'</p><button class="btn" data-act="tab" data-v="'+tab+'">'+btn+'</button></div>';}
+function skel(n){var h='<div class="cardgrid" aria-hidden="true">';for(var i=0;i<n;i++)h+='<div class="card skel"><i style="width:46%"></i><i style="width:72%"></i><i style="width:34%"></i></div>';return h+'</div>';}
+function seats(b,size){var h='<span class="seats">';b.booking_players.forEach(function(p){h+='<span class="seat'+(p.paid_at?' paid':'')+'">'+pav(p,28)+'</span>';});
+  for(var i=b.booking_players.length;i<size;i++)h+='<span class="seat free" aria-hidden="true">+</span>';return h+'</span>';}
+function homeCard(){var me=S.me,nx=S.next,first=esc(String(me.name||'').split(' ')[0]);
+  var h='<div class="home"><div class="home-hi"><span class="muted small">'+hello()+',</span><b>'+first+'</b></div>';
+  if(nx){var ct=court(nx.court_id),pend=nx.kind==='app'&&nx.payment_state==='pending';
+    h+='<button type="button" class="home-next" data-act="match" data-v="'+nx.id+'"><span class="hn-when"><small>'+esc(inTime(nx))+'</small><b>'+hm(nx.start_min)+'</b></span>'+
+      '<span class="hn-info"><b>Tu próximo partido</b><span style="text-transform:capitalize">'+esc(dayLong(nx.day))+' · '+esc(ct?ct.name:'')+'</span>'+
+      '<span class="tag '+(pend?'warn':'lime')+'">'+(pend?'Pendiente de pago':'Confirmado')+'</span></span><span class="hn-go" aria-hidden="true">›</span></button>';}
+  else h+='<div class="home-next none"><span class="hn-info"><b>Aún no tienes partido</b><span>Elige día y hora, o únete a un partido abierto.</span></span><button type="button" class="btn btn-sm btn-blue" data-act="tab" data-v="partidos">Ver partidos</button></div>';
+  return h+'</div>';}
+
 function vReservar(){
-  var c=S.club,h='<button class="clubbtn" data-act="clubs" aria-label="Ver clubes"><h2>'+esc(c.name)+' · '+esc(c.city)+'</h2><span class="clubchg">Cambiar</span></button><p class="muted small" style="margin:4px 0 8px">Mañana '+euro(c.price_morning)+' · tarde '+euro(c.price_afternoon)+' por jugador (tarde desde las '+hm(c.cut_min)+'). Reservas de 1 h 30.</p>';
+  var c=S.club,h=homeCard()+'<button class="clubbtn" data-act="clubs" aria-label="Ver clubes"><h2>'+esc(c.name)+' · '+esc(c.city)+'</h2><span class="clubchg">Cambiar</span></button><p class="muted small" style="margin:4px 0 8px">Mañana '+euro(c.price_morning)+' · tarde '+euro(c.price_afternoon)+' por jugador (tarde desde las '+hm(c.cut_min)+'). Reservas de 1 h 30.</p>';
   h+=dayChips(S.day,'day');
-  h+='<p style="margin:2px 0 0;font-weight:700;text-transform:capitalize">'+esc(dayLong(S.day))+'</p>';
   var occ={};S.occ.forEach(function(o){occ[o.court_id+'|'+o.start_min]=o;});
-  h+='<div class="courts">';
+  var nFree=0,nOpen=0;S.courts.forEach(function(ct){slotList().forEach(function(m){if(isPast(S.day,m))return;var o=occ[ct.id+'|'+m];if(!o)nFree++;else if(o.is_open&&o.players<o.size)nOpen++;});});
+  h+='<div class="daysum"><b style="text-transform:capitalize">'+esc(dayLong(S.day))+'</b>'+(S.fetching?'<span class="chip"><span class="spin"></span></span>':
+    '<span class="chip free"><b>'+nFree+'</b> '+(nFree===1?'hora libre':'horas libres')+'</span>'+(nOpen?'<button type="button" class="chip open" data-act="tab" data-v="partidos"><b>'+nOpen+'</b> '+(nOpen===1?'partido abierto':'partidos abiertos')+'</button>':''))+'</div>';
+  h+='<div class="courts'+(S.fetching?' fetching':'')+'">';
   S.courts.forEach(function(ct){
     h+='<div class="card"><div class="row between"><div><h3>'+esc(ct.name)+'</h3><span class="muted small">'+esc(ct.description||'')+'</span></div></div><div class="slots">';
     slotList().forEach(function(m){var o=occ[ct.id+'|'+m],past=isPast(S.day,m);
@@ -625,26 +711,28 @@ function vReservar(){
   return h+'</div>';}
 
 function matchCard(b){var ct=court(b.court_id),n=b.booking_players.length,me=b.booking_players.some(function(p){return p.user_id===S.user.id;});
-  var owner=b.booking_players.filter(function(p){return p.user_id===b.owner_id;})[0];
-  return '<button class="card" style="width:100%;text-align:left;color:inherit" data-act="match" data-v="'+b.id+'">'+
-    '<div class="row between"><b style="text-transform:capitalize">'+esc(dayLong(b.day))+' · '+hm(b.start_min)+'</b>'+
-    (b.kind==='app'&&b.payment_state==='pending'?'<span class="tag warn">Pagado '+paidCount(b)+'/'+ct.size+'</span>':b.is_open?'<span class="tag">'+n+'/'+ct.size+' jugadores</span>':'<span class="tag lime">Confirmada</span>')+'</div>'+
-    '<div class="muted small" style="margin-top:4px">'+esc(ct.name)+(b.lvl_min!=null?' · nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):'')+(owner?' · organiza '+esc(pname(owner)):'')+'</div>'+
-    (cdHtml(b)?'<div style="margin-top:8px">'+cdHtml(b)+'</div>':'')+
-    (me?'<div class="small" style="margin-top:6px;color:var(--ok);font-weight:700">'+(b.owner_id===S.user.id?'Organizas tú':'Estás apuntado')+'</div>':'')+
-    friendsLine(b)+'</button>';}
+  var pend=b.kind==='app'&&b.payment_state==='pending',left=ct.size-n,cd=cdHtml(b);
+  var st=pend?(b.is_open&&left>0?'<span class="tag">Falta'+(left>1?'n ':' ')+left+'</span>':'<span class="tag warn">Pagado '+paidCount(b)+'/'+ct.size+'</span>'):'<span class="tag lime">Confirmada</span>';
+  return '<button class="card mc'+(me?' mine':'')+'" data-act="match" data-v="'+b.id+'">'+
+    '<span class="mc-when"><small>'+esc(dfmt(b.day,{weekday:'short'}).replace('.',''))+' '+dfmt(b.day,{day:'numeric'})+'</small><b>'+hm(b.start_min)+'</b><em>'+esc(inTime(b))+'</em></span>'+
+    '<span class="mc-body"><span class="row between"><b>'+esc(ct.name)+'</b>'+st+'</span>'+
+    '<span class="muted small">'+(b.lvl_min!=null?'Nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):esc(ct.description||''))+(me?' · <span style="color:var(--ok);font-weight:700">'+(b.owner_id===S.user.id?'Organizas tú':'Estás apuntado')+'</span>':'')+'</span>'+
+    '<span class="row between" style="margin-top:8px">'+seats(b,ct.size)+(cd||'')+'</span>'+
+    friendsLine(b)+'</span></button>';}
 function friendsIn(b){return b.booking_players.filter(function(p){return p.user_id&&S.following&&S.following[p.user_id];});}
 function friendsLine(b){var f=friendsIn(b);if(!f.length)return '';
   return '<div class="friends">'+f.slice(0,3).map(function(p){return pav(p,22);}).join('')+'<span>Juega'+(f.length>1?'n ':' ')+esc(f.map(pname).slice(0,2).join(' y '))+(f.length>2?' y más':'')+', a quien'+(f.length>1?'es':'')+' sigues</span></div>';}
 
 function vPartidos(){var h='<h2 style="margin-top:4px">Partidos abiertos</h2><p class="muted small" style="margin:4px 0 0">Partidos del Olimpo a los que les falta gente. Apúntate y habla con el resto en el chat.</p>';
+  if(!S.loaded.partidos)return h+skel(3);
   var list=S.open.filter(function(b){return b.booking_players.length<court(b.court_id).size||b.booking_players.some(function(p){return p.user_id===S.user.id;});});
-  if(!list.length)return h+'<div class="empty-state">No hay partidos abiertos ahora mismo.<br><br><button class="btn" data-act="tab" data-v="reservar">Reserva y abre uno</button></div>';
+  if(!list.length)return h+emptyState('No hay partidos abiertos ahora mismo.<br>Abre tú el primero y que se apunte el club.','Reservar y abrir uno','reservar');
   list=list.slice().sort(function(a,b){return (friendsIn(b).length?1:0)-(friendsIn(a).length?1:0);});
   return h+'<div class="cardgrid">'+list.map(matchCard).join('')+'</div>';}
 
 function vMias(){var h='<h2 style="margin-top:4px">Mis reservas</h2>'+pushCard(true);
-  if(!S.mine.length)return h+'<div class="empty-state">No tienes reservas próximas.<br><br><button class="btn" data-act="tab" data-v="reservar">Reservar pista</button></div>';
+  if(!S.loaded.mias)return h+skel(2);
+  if(!S.mine.length)return h+emptyState('No tienes reservas próximas.<br>La pista te está esperando.','Reservar pista','reservar');
   return h+'<div class="cardgrid">'+S.mine.map(matchCard).join('')+'</div>';}
 
 function vPerfil(){var me=S.me,opts=lvlOpts(me.level,true),L=lvlInfo(me.level);
@@ -952,7 +1040,7 @@ var A={
   retry:function(){curUid=undefined;start();},
   authMode:function(el){S.authMode=el.dataset.v;render();},
   tab:function(el){S.enter=true;S.tab=el.dataset.v;if(S.tab==='club'&&S.cobros)S.cobros.stale=true;S.sheet=null;stopPoll();render();refresh();window.scrollTo(0,0);},
-  day:function(el){S.enter=true;S.picked=true;S.day=el.dataset.v;buzz();render();refresh();},
+  day:function(el){S.enter=true;S.picked=true;S.fetching=true;S.day=el.dataset.v;buzz();render();refresh();},
   panelDay:function(el){S.enter=true;S.picked=true;buzz();S.panelDay=el.dataset.v;S.caja=null;render();refresh();},
   book:function(el){S.busy=false;S.sheet={type:'book',court:el.dataset.court,start:+el.dataset.v,open:false};renderSheet();},
   toggleOpen:function(el){S.sheet.open=el.checked;renderSheet();},
