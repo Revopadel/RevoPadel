@@ -253,6 +253,118 @@ dialog::backdrop{background:rgba(3,6,14,.86)}
 dialog video{width:100%;border-radius:22px;background:#000}
 .close{position:absolute;top:0;right:0;width:44px;height:44px;border-radius:50%;border:0;background:var(--linea);color:var(--noche);cursor:pointer;display:flex;align-items:center;justify-content:center}
 
+/* ===== Web más viva ===== */
+body{background:
+  radial-gradient(900px 600px at 0% 38%,rgba(91,140,255,.07),transparent 60%),
+  radial-gradient(900px 600px at 100% 62%,rgba(212,240,74,.045),transparent 60%),
+  var(--noche)}
+html,body{overflow-x:clip}
+/* Barra de avance con la bola en la punta */
+.prog{position:fixed;inset:0 0 auto 0;height:4px;z-index:30;pointer-events:none}
+.prog i{display:block;height:100%;width:100%;background:var(--lima);transform-origin:left;transform:scaleX(var(--p,0))}
+.prog svg{position:absolute;top:-5px;left:calc(var(--p,0) * 100%);width:14px;height:14px;margin-left:-7px;rotate:calc(var(--p,0) * 1440deg);opacity:var(--on,0);transition:opacity .2s}
+/* Cabecera fija que se vuelve cristal al bajar */
+.nav{position:fixed;transition:background .25s,box-shadow .25s,backdrop-filter .25s}
+.nav .wrap{padding-bottom:12px;transition:padding .25s}
+.nav.scrolled{background:rgba(8,12,18,.72);-webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);box-shadow:0 1px 0 rgba(255,255,255,.07)}
+.nav.scrolled .wrap{padding-top:max(10px,env(safe-area-inset-top));padding-bottom:10px}
+.nav svg{transition:scale .25s;transform-origin:left center}
+.nav.scrolled svg{scale:.82}
+/* Luces de la portada */
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none}
+.hero::before{width:520px;height:520px;left:-140px;top:-160px;background:rgba(91,140,255,.45)}
+.hero::after{width:460px;height:460px;right:-120px;bottom:-200px;background:rgba(212,240,74,.16)}
+.hero-steps button{position:relative;overflow:hidden}
+.hero-steps li.on button::after{content:"";position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--lima);transform-origin:left;transform:scaleX(0)}
+/* Cinta que corre */
+.tape{position:relative;z-index:3;margin:-26px -3vw 0;rotate:-1.6deg;background:var(--lima);color:var(--tinta);overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.tape-in{display:flex;width:max-content}
+.tape ul{display:flex;list-style:none;margin:0;padding:13px 0;flex:none}
+.tape li{font:italic 800 26px/1 var(--font-d);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;display:flex;align-items:center}
+.tape li::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--tinta);margin:0 26px}
+/* Cifras */
+.stats{padding:84px 0 0}
+.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;list-style:none;margin:0;padding:0}
+.stat{position:relative;overflow:hidden;background:var(--noche-2);border:1px solid var(--malla);border-radius:24px;padding:26px 24px;display:flex;flex-direction:column;gap:6px}
+.stat b{font:italic 800 clamp(54px,6vw,84px)/.9 var(--font-d);color:var(--lima);font-variant-numeric:tabular-nums}
+.stat b small{font-size:.42em;margin-left:6px;color:var(--linea)}
+.stat span{color:var(--gris);font-size:16px}
+/* Foco de luz que sigue al ratón */
+.glow{position:relative;overflow:hidden}
+.glow::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),rgba(212,240,74,.10),transparent 60%)}
+.glow:hover::before{opacity:1}
+.glow>*{position:relative}
+/* Escaparate: una pantalla por función */
+.show{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:64px;align-items:center}
+.show-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.show-list button{position:relative;overflow:hidden;width:100%;text-align:left;border:1px solid transparent;background:transparent;color:inherit;font:inherit;cursor:pointer;border-radius:22px;padding:20px 22px;display:grid;grid-template-columns:44px minmax(0,1fr);gap:16px;align-items:start;transition:background .25s,border-color .25s}
+.show-list button:hover{background:rgba(255,255,255,.03)}
+.show-list .n{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--noche-2);color:var(--gris);font:italic 800 24px/1 var(--font-d);transition:background .25s,color .25s}
+.show-list h3{font-size:26px;color:var(--gris);transition:color .25s}
+.show-list p{color:var(--gris);font-size:17px;display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease,margin .35s ease;margin-top:0}
+.show-list p>span{overflow:hidden}
+.show-list li.on button{background:var(--noche-2);border-color:var(--malla)}
+.show-list li.on .n{background:var(--lima);color:var(--tinta)}
+.show-list li.on h3{color:var(--linea)}
+.show-list li.on p{grid-template-rows:1fr;margin-top:6px}
+.show-list .bar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--lima);transform-origin:left;transform:scaleX(0)}
+.show-stage{position:relative;display:flex;justify-content:center}
+.show-stage::before{content:"";position:absolute;width:86%;aspect-ratio:1;top:50%;left:50%;translate:-50% -50%;border-radius:50%;background:radial-gradient(closest-side,rgba(91,140,255,.35),transparent);pointer-events:none}
+.show-stage .phone{position:relative;width:min(310px,74vw)}
+/* Etiquetas y preguntas */
+.soon-list li{transition:padding .25s,background .25s}
+.soon-list li:hover{padding-left:12px}
+.faq details{interpolate-size:allow-keywords}
+.faq details::details-content{block-size:0;overflow:hidden;transition:block-size .35s ease,content-visibility .35s allow-discrete}
+.faq details[open]::details-content{block-size:auto}
+.faq summary{transition:color .2s}
+.faq summary:hover{color:var(--lima)}
+/* Botón fijo en el móvil */
+.dock{position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:20;display:none;translate:0 140%;transition:translate .35s cubic-bezier(.2,.8,.2,1)}
+.dock.on{translate:0 0}
+.dock .btn{width:100%;box-shadow:0 14px 34px rgba(0,0,0,.55)}
+@media (max-width:900px){
+  .dock{display:block}
+  .tape li{font-size:20px}.tape li::after{margin:0 18px;width:9px;height:9px}
+  .stats{padding-top:56px}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.stat{padding:20px 18px;border-radius:20px}
+  .show{grid-template-columns:minmax(0,1fr);gap:36px}
+  .show-stage{order:-1}
+  .show-stage .phone{width:min(224px,58vw)}
+  .show-list{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:10px}
+  .show-list li:not(.on) button{display:block;padding:4px;border-radius:16px}
+  .show-list li:not(.on) button>span:not(.n){display:none}
+  .show-list li.on{order:1;flex-basis:100%}
+  .show-list button{padding:16px 16px;grid-template-columns:44px minmax(0,1fr);gap:12px}
+  .show-list h3{font-size:23px}
+  .show-list li.on p{min-height:5.2em}
+  .foot{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes deriva{0%,100%{translate:0 0}50%{translate:60px 40px}}
+  .hero::before{animation:deriva 14s ease-in-out infinite}
+  .hero::after{animation:deriva 18s ease-in-out infinite reverse}
+  @keyframes llenar{to{transform:scaleX(1)}}
+  .hero-steps li.on button::after{animation:llenar 3.4s linear forwards}
+  @keyframes cinta{to{transform:translateX(-50%)}}
+  .tape-in{animation:cinta 28s linear infinite}
+  .tape:hover .tape-in{animation-play-state:paused}
+  .show.run .show-list li.on .bar{animation:llenar 5s linear forwards}
+  .show:hover .show-list li.on .bar{animation-play-state:paused}
+  @keyframes mecer{0%,100%{translate:0 0;rotate:-1.5deg}50%{translate:0 -12px;rotate:1deg}}
+  .show-stage .phone{animation:mecer 7s ease-in-out infinite}
+  .js .stat b{display:inline-block}
+  @keyframes saltito{0%{scale:.6;opacity:0}60%{scale:1.1}100%{scale:1;opacity:1}}
+  .js .stat.in b{animation:saltito .6s cubic-bezier(.2,1.3,.4,1) both;animation-delay:inherit}
+  .js .reveal.h2r{transform:none;clip-path:inset(0 0 100% 0);transition:clip-path .9s cubic-bezier(.2,.7,.2,1),opacity .5s}
+  .js .reveal.h2r.in{clip-path:inset(0 0 -10% 0)}
+  @keyframes tic{0%{scale:0;rotate:-40deg}70%{scale:1.2}100%{scale:1;rotate:0deg}}
+  .js .clubs-text.in .perks svg{animation:tic .5s cubic-bezier(.2,1.4,.4,1) both}
+  .js .clubs-text.in .perks li:nth-child(1) svg{animation-delay:.25s}.js .clubs-text.in .perks li:nth-child(2) svg{animation-delay:.4s}
+  .js .clubs-text.in .perks li:nth-child(3) svg{animation-delay:.55s}.js .clubs-text.in .perks li:nth-child(4) svg{animation-delay:.7s}
+  .js .ya.in .state{animation:saltito .5s cubic-bezier(.2,1.3,.4,1) .35s both}
+}
+
 /* Móvil */
 @media (max-width:900px){
   .nav-links a:not(.btn){display:none}
@@ -273,7 +385,8 @@ dialog video{width:100%;border-radius:22px;background:#000}
 </head>
 <body>
 
-<header class="nav">
+<div class="prog" id="prog" aria-hidden="true"><i></i><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#D4F04A" stroke="#0A0F05" stroke-width="1"></circle><path d="M4.5 5.5c3.5 3 3.5 10 0 13M19.5 5.5c-3.5 3-3.5 10 0 13" fill="none" stroke="#0A0F05" stroke-width="1.6" stroke-linecap="round"></path></svg></div>
+<header class="nav" id="nav">
   <div class="wrap">
     <a href="./" aria-label="Revo Pádel, inicio">
       <svg role="img" aria-label="Revo" width="108" height="46" viewBox="0 0 400 170"><text x="0" y="142" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-style="italic" font-weight="800" font-size="164" fill="#EEF2F7" textLength="236" lengthAdjust="spacingAndGlyphs">REV</text><circle cx="320" cy="85" r="66" fill="#D4F04A"></circle><path d="M278 35C302 62 302 108 278 135M362 35C338 62 338 108 362 135" fill="none" stroke="#0A0F05" stroke-width="9" stroke-linecap="round"></path></svg>
@@ -330,9 +443,12 @@ dialog video{width:100%;border-radius:22px;background:#000}
     </div>
   </section>
 
+
+  <div class="tape" aria-hidden="true"><div class="tape-in"><ul><li>Reserva en 3 toques</li><li>Partidos abiertos</li><li>Paga solo tu parte</li><li>Chat del partido</li><li>Test de nivel</li><li>Sigue a tus compañeros</li><li>Avisos en el móvil</li></ul><ul><li>Reserva en 3 toques</li><li>Partidos abiertos</li><li>Paga solo tu parte</li><li>Chat del partido</li><li>Test de nivel</li><li>Sigue a tus compañeros</li><li>Avisos en el móvil</li></ul></div></div>
+
   <section class="live" id="hoy" aria-labelledby="live-t" hidden>
     <div class="wrap">
-      <div class="live-card">
+      <div class="live-card glow">
         <div class="live-tag"><span class="pulse" aria-hidden="true"></span>En directo · Olimpo, Cabra</div>
         <div class="live-grid">
           <div class="live-info">
@@ -350,24 +466,38 @@ dialog video{width:100%;border-radius:22px;background:#000}
     </div>
   </section>
 
+
+  <section class="stats wrap" aria-label="Revo en cifras">
+    <ul class="stats-grid">
+      <li class="stat glow"><b data-n="3">3</b><span>toques para reservar tu pista</span></li>
+      <li class="stat glow"><b data-n="1">1<small>min</small></b><span>para instalarla, sin tiendas de apps</span></li>
+      <li class="stat glow"><b data-n="0" data-from="9">0</b><span>llamadas al club para saber si hay hueco</span></li>
+      <li class="stat glow"><b data-n="24">24<small>h</small></b><span>abierta: reserva también de madrugada</span></li>
+    </ul>
+  </section>
+
   <section class="use wrap" id="como" aria-labelledby="como-t">
     <div class="use-head">
       <h2 id="como-t">Lo de siempre, sin el lío de siempre.</h2>
       <p class="lead">Nada de grupos de WhatsApp preguntando quién puede ni llamadas al club para ver si hay hueco. Abres Revo y lo ves.</p>
     </div>
-    <div class="screens">
-      <figure class="screen" style="margin:0">
-        <div class="phone"><img src="web/img/app-reservar.webp" width="390" height="844" loading="lazy" alt="Cuadrante de horas libres de las cinco pistas del Olimpo"></div>
-        <figcaption><h3>Mira qué horas quedan libres</h3><p>Las cinco pistas del Olimpo, con las horas libres y ocupadas al momento. Reservas de hora y media.</p></figcaption>
-      </figure>
-      <figure class="screen" style="margin:0">
-        <div class="phone"><img src="web/img/app-partidos.webp" width="390" height="844" loading="lazy" alt="Lista de partidos abiertos con los huecos que faltan y el nivel de cada partido"></div>
-        <figcaption><h3>¿Os falta uno? Abrid el partido</h3><p>Lo ve todo el club, con el nivel que buscáis. Quien quiera, se apunta. También podéis pasar el enlace por WhatsApp.</p></figcaption>
-      </figure>
-      <figure class="screen" style="margin:0">
-        <div class="phone"><img src="web/img/app-partido.webp" width="390" height="844" loading="lazy" alt="Partido abierto con los jugadores apuntados y el chat del partido"></div>
-        <figcaption><h3>Habla solo con los de tu partido</h3><p>Cada partido tiene su chat: quién lleva bolas, si alguien llega tarde… sin molestar a nadie más.</p></figcaption>
-      </figure>
+    <div class="show" id="show">
+      <ol class="show-list" id="showList">
+        <li class="on"><button type="button" data-i="0" aria-pressed="true"><span class="n" aria-hidden="true">1</span><span><h3>Mira qué horas quedan libres</h3><p><span>Las cinco pistas del Olimpo, con las horas libres y ocupadas al momento. Reservas de hora y media.</span></p></span><i class="bar" aria-hidden="true"></i></button></li>
+        <li><button type="button" data-i="1" aria-pressed="false"><span class="n" aria-hidden="true">2</span><span><h3>¿Os falta uno? Abrid el partido</h3><p><span>Lo ve todo el club, con el nivel que buscáis. Quien quiera, se apunta. También podéis pasar el enlace por WhatsApp.</span></p></span><i class="bar" aria-hidden="true"></i></button></li>
+        <li><button type="button" data-i="2" aria-pressed="false"><span class="n" aria-hidden="true">3</span><span><h3>Habla solo con los de tu partido</h3><p><span>Cada partido tiene su chat: quién lleva bolas, si alguien llega tarde… sin molestar a nadie más.</span></p></span><i class="bar" aria-hidden="true"></i></button></li>
+        <li><button type="button" data-i="3" aria-pressed="false"><span class="n" aria-hidden="true">4</span><span><h3>Descubre tu nivel en un minuto</h3><p><span>Siete preguntas sobre cómo juegas y Revo te dice tu nivel, para que los partidos te junten con gente parecida.</span></p></span><i class="bar" aria-hidden="true"></i></button></li>
+        <li><button type="button" data-i="4" aria-pressed="false"><span class="n" aria-hidden="true">5</span><span><h3>Sigue a tus compañeros</h3><p><span>Sus partidos abiertos te salen los primeros y te avisamos al móvil cuando abren uno nuevo.</span></p></span><i class="bar" aria-hidden="true"></i></button></li>
+      </ol>
+      <div class="show-stage">
+        <div class="phone"><div class="shots" id="showShots">
+            <img class="on" src="web/img/app-reservar.webp" width="390" height="844" loading="lazy" alt="Cuadrante de horas libres de las cinco pistas del Olimpo">
+            <img src="web/img/app-partidos.webp" width="390" height="844" loading="lazy" alt="Lista de partidos abiertos con los huecos que faltan y el nivel de cada partido">
+            <img src="web/img/app-partido.webp" width="390" height="844" loading="lazy" alt="Partido abierto con los jugadores apuntados y el chat del partido">
+            <img src="web/img/app-nivel.webp" width="390" height="844" loading="lazy" alt="Resultado del test de nivel: 4,0, intermedio alto">
+            <img src="web/img/app-amigos.webp" width="390" height="844" loading="lazy" alt="Partidos abiertos con el aviso de que juega alguien a quien sigues">
+        </div></div>
+      </div>
     </div>
   </section>
 
@@ -382,14 +512,16 @@ dialog video{width:100%;border-radius:22px;background:#000}
         <li class="ya"><div><b>Partidos abiertos con chat</b><span>Busca gente de tu nivel para completar la pista.</span></div><span class="state">Ya disponible</span></li>
         <li class="ya"><div><b>Pagar online</b><span>Cada uno paga su parte con tarjeta, o uno paga la pista entera. Se acabaron los plantones.</span></div><span class="state">Ya disponible</span></li>
         <li class="ya"><div><b>Avisos en el móvil</b><span>Te avisamos cuando tu reserva se confirma, alguien se une a tu partido o se cancela.</span></div><span class="state">Ya disponible</span></li>
-        <li><div><b>Nivel, ranking e insignias</b><span>Tu nivel sube con tus resultados y compites en el ranking del club.</span></div><span class="state">Pronto</span></li>
+        <li class="ya"><div><b>Test de nivel y perfil con foto</b><span>Descubre tu nivel en un minuto y pon cara a tu perfil.</span></div><span class="state">Ya disponible</span></li>
+        <li class="ya"><div><b>Seguir a tus compañeros</b><span>Ves primero sus partidos y te avisamos cuando abren uno.</span></div><span class="state">Ya disponible</span></li>
+        <li><div><b>Ranking e insignias</b><span>Tu nivel sube con tus resultados y compites en el ranking del club.</span></div><span class="state">Pronto</span></li>
         <li><div><b>Bolas y agua con la reserva</b><span>Las pides al reservar y te esperan en recepción.</span></div><span class="state">Pronto</span></li>
       </ul>
     </div>
   </section>
 
   <section class="install wrap" id="instalar" aria-labelledby="inst-t">
-    <div class="install-card">
+    <div class="install-card glow">
       <div>
         <h2 id="inst-t">Instálala en un minuto.</h2>
         <p class="lead">Revo se instala desde el navegador, sin pasar por Google Play ni App Store. Ocupa muy poco y siempre tienes la última versión.</p>
@@ -432,7 +564,7 @@ dialog video{width:100%;border-radius:22px;background:#000}
           <li><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#D4F04A"></circle><path d="M7 12.5l3.2 3L17 9" fill="none" stroke="#0A0F05" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><div><b>El 100 % de la pista, para ti</b><span>Sin comisión por reserva: lo que pagan los jugadores te llega entero. Una cuota fija desde 39 € al mes.</span></div></li>
         </ul>
       </div>
-      <form class="form" id="leadForm" novalidate>
+      <form class="form glow" id="leadForm" novalidate>
         <h3>Cuéntanos de tu club</h3>
         <p>Te escribimos esta semana para enseñártelo sin compromiso.</p>
         <div class="row2">
@@ -481,6 +613,8 @@ dialog video{width:100%;border-radius:22px;background:#000}
   </div>
 </footer>
 
+<div class="dock" id="dock"><a class="btn btn-lima" href="#instalar">Instalar Revo gratis</a></div>
+
 <dialog id="trailer" aria-label="Tráiler de Revo">
   <button class="close" type="button" id="cerrarTrailer" aria-label="Cerrar el tráiler"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg></button>
   <video id="trailerVideo" src="web/revo-trailer.mp4" poster="web/img/trailer-poster.jpg" controls playsinline preload="none"></video>
@@ -513,11 +647,42 @@ dialog video{width:100%;border-radius:22px;background:#000}
   play();
 
   /* Aparecer al bajar */
-  var rv=document.querySelectorAll('.use-head,.screen,.soon-grid>div:first-child,.soon-list li,.install-card,.clubs-grid>*,.faq-grid>*,.live-card');
+  var rv=document.querySelectorAll('.use-head,.show,.stat,.soon-grid>div:first-child,.soon-list li,.install-card,.clubs-grid>*,.faq-grid>*,.live-card');
   if('IntersectionObserver' in window&&!RM){
     var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -8% 0px'});
-    rv.forEach(function(el,i){el.classList.add('reveal');el.style.transitionDelay=(el.matches('.soon-list li,.screen')?((i%4)*90)+'ms':'0ms');io.observe(el);});
+    var k4=0;rv.forEach(function(el){var st=el.matches('.soon-list li,.stat');el.classList.add('reveal');var d=st?((k4++%4)*90)+'ms':'0ms';el.style.transitionDelay=d;el.style.animationDelay=d;io.observe(el);});
+    [].forEach.call(document.querySelectorAll('main h2'),function(h){if(h.closest('.live'))return;h.classList.add('reveal','h2r');io.observe(h);});
   }
+
+  /* Barra de avance, cabecera de cristal y botón fijo del móvil */
+  var prog=document.getElementById('prog'),nav=document.getElementById('nav'),dock=document.getElementById('dock'),tkP=false;
+  var heroCta=document.querySelector('.hero-ctas'),inst=document.getElementById('instalar'),clubsSec=document.getElementById('clubes');
+  function seen(el){var r=el.getBoundingClientRect();return r.top<window.innerHeight&&r.bottom>0;}
+  function onScroll(){tkP=false;var y=window.scrollY,max=document.documentElement.scrollHeight-window.innerHeight;
+    prog.style.setProperty('--p',max>0?Math.min(1,y/max).toFixed(4):0);prog.style.setProperty('--on',y>30?1:0);
+    nav.classList.toggle('scrolled',y>40);
+    dock.classList.toggle('on',y>200&&!seen(heroCta)&&!seen(inst)&&!seen(clubsSec));}
+  window.addEventListener('scroll',function(){if(!tkP){tkP=true;requestAnimationFrame(onScroll);}},{passive:true});window.addEventListener('resize',onScroll);onScroll();
+
+  /* Foco de luz que sigue al ratón en las tarjetas */
+  if(window.matchMedia('(pointer:fine)').matches)[].forEach.call(document.querySelectorAll('.glow'),function(c){c.addEventListener('mousemove',function(e){var r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px');});});
+
+  /* Cifras que cuentan al entrar en pantalla */
+  if('IntersectionObserver' in window&&!RM){var ioN=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;ioN.unobserve(e.target);
+      var b=e.target,to=+b.dataset.n,from=b.dataset.from?+b.dataset.from:0,tn=b.firstChild,t0=null;if(to===from)return;
+      function f(t){if(!t0)t0=t;var k=Math.min(1,(t-t0)/900);tn.nodeValue=Math.round(from+(to-from)*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f);}tn.nodeValue=from;requestAnimationFrame(f);});},{threshold:.6});
+    [].forEach.call(document.querySelectorAll('.stat b'),function(b){ioN.observe(b);});}
+
+  /* Escaparate: pasa solo de una función a otra mientras está en pantalla */
+  var showEl=document.getElementById('show'),sLis=[].slice.call(document.querySelectorAll('#showList li')),sImgs=[].slice.call(document.querySelectorAll('#showShots img')),sCur=0,sT=null,sVis=false,sHover=false;
+  function sShow(i){sCur=i;sLis.forEach(function(li,k){li.classList.toggle('on',k===i);li.querySelector('button').setAttribute('aria-pressed',String(k===i));});sImgs.forEach(function(im,k){im.classList.toggle('on',k===i);});}
+  function sPlay(){clearTimeout(sT);showEl.classList.toggle('run',sVis&&!RM);if(!sVis||RM||sHover)return;
+    var bar=sLis[sCur].querySelector('.bar');bar.style.animation='none';void bar.offsetWidth;bar.style.animation='';
+    sT=setTimeout(function(){sShow((sCur+1)%sLis.length);sPlay();},5000);}
+  sLis.forEach(function(li,k){li.querySelector('button').addEventListener('click',function(){sShow(k);sPlay();});});
+  if(showEl){showEl.addEventListener('mouseenter',function(){sHover=true;clearTimeout(sT);});showEl.addEventListener('mouseleave',function(){sHover=false;sPlay();});
+    if('IntersectionObserver' in window)new IntersectionObserver(function(es){sVis=es[0].isIntersecting;sPlay();},{threshold:.35}).observe(showEl);
+    document.addEventListener('visibilitychange',function(){if(document.hidden)clearTimeout(sT);else sPlay();});}
 
   /* Hoy en el Olimpo, en directo (solo se ve si una hora está libre u ocupada, nunca quién reserva) */
   var SBURL='https://ediueyqmkrboxvmisjmr.supabase.co/rest/v1/',SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkaXVleXFta3Jib3h2bWlzam1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MTM1NzAsImV4cCI6MjEwNzk4OTU3MH0.5tLy3iUSY2U9lKO5n9PlOdWG6ExdBKlIIzOrvjf-w4g';
