@@ -216,6 +216,9 @@ div.bk{cursor:default}
 .friends .av.ini{font-size:9px!important}
 .pcard{padding-top:6px}
 .pcard .av.big{box-shadow:0 0 0 3px rgba(212,240,74,.35)}
+.steps{margin:0 0 12px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--muted);line-height:1.45}
+.steps b{color:var(--ink)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;background:rgba(255,255,255,.07);border-radius:5px;padding:1px 5px}
 .terms{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45;cursor:pointer}
 .terms input{width:20px;height:20px;flex:none;margin:1px 0 0;accent-color:var(--lime)}
 .terms a,.legal a{color:var(--ink)}
@@ -597,7 +600,7 @@ async function loadBase(){
   var n=nowM().day;if(!S.day)S.day=n;if(!S.panelDay)S.panelDay=n;
 }
 var SEL='id,court_id,day,start_min,kind,label,is_open,fixed_id,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,pay_deadline,booking_players(user_id,guest_name,paid_at,profiles(name,level,avatar_url))';
-var FEE=0.40;
+var FEE=0;   // Revo no cobra gestión por pago: lo que se paga es la pista, y va directo al club
 /* Llama a una función del servidor (pagos) y devuelve su respuesta o un error legible */
 async function fx(name,body){var r=await sb.functions.invoke(name,{body:body});
   if(r.error){var msg=r.error.message||'Algo ha fallado';try{var j=await r.error.context.json();if(j&&j.error)msg=j.error;}catch(e){}throw new Error(msg);}
@@ -854,9 +857,12 @@ function toHM(m){return hm(m);}
 function fromHM(v){var p=String(v||'').split(':');return (+p[0])*60+(+p[1]||0);}
 function cobrosCard(){var c=S.cobros;if(!c||c.loading)return '<div class="card muted small"><span class="spin"></span> Comprobando los cobros…</div>';
   if(c.error)return '<div class="card"><b>Cobros</b><p class="muted small" style="margin:4px 0 0">'+esc(c.error)+'</p></div>';
-  if(c.listo===false)return '<div class="card"><b>Cobros sin configurar</b><p class="muted small" style="margin:4px 0 0">'+esc(c.motivo||'')+'</p></div>';
-  if(c.cobra)return '<div class="card row between"><span><b>Cobros activos</b><br><span class="muted small">Los pagos de las reservas llegan a la cuenta de Stripe del club'+(c.prueba?' (modo prueba)':'')+'.</span></span><span class="tag lime">Activos</span></div>';
-  return '<div class="card col"><div><b>'+(c.conectado?'Termina de conectar los cobros':'Conecta los cobros del club')+'</b><p class="muted small" style="margin:4px 0 0">'+(c.conectado?'Falta completar los datos del club en Stripe.':'Para que el dinero de las reservas llegue directo a la cuenta del club.')+' Mientras tanto, los pagos de prueba se quedan en la cuenta de Revo.</p></div><button class="btn btn-line" data-act="cobros"'+(S.busy?' disabled':'')+'>'+(c.conectado?'Continuar en Stripe':'Conectar cobros con Stripe')+'</button></div>';}
+  if(c.modo==='propia')return '<div class="card col" style="gap:10px"><div class="row between"><span><b>Cobros activos'+(c.real?'':' · modo prueba')+'</b><br><span class="muted small">El dinero de las reservas llega directo a la cuenta de Stripe del club'+(c.cuenta?' ('+esc(c.cuenta)+')':'')+'.</span></span><span class="tag '+(c.real?'lime':'warn')+'">'+(c.real?'Activos':'Prueba')+'</span></div>'+
+    '<div class="row between small muted"><span>Clave: <code>'+esc(c.clave||'')+'</code></span><button type="button" class="linkbtn" style="padding:0" data-act="cobros">Cambiar</button></div>'+
+    (c.aviso?'':'<p class="small" style="margin:0;color:var(--warn)">A la clave le falta permiso para «Webhook Endpoints»: los pagos funcionan, pero pueden tardar hasta un minuto en confirmarse.</p>')+'</div>';
+  return '<div class="card col"><div><b>Activa el pago online del club</b><p class="muted small" style="margin:4px 0 0">Conecta la cuenta de Stripe del club y el dinero de cada reserva os llegará directo, sin pasar por Revo.'+
+    (c.modo==='compartida'?' Ahora mismo los pagos son solo de prueba, con una cuenta de pruebas de Revo.':' Hasta entonces no se puede pagar desde la app.')+'</p></div>'+
+    '<button class="btn btn-line" data-act="cobros">Conectar la cuenta de Stripe</button></div>';}
 
 /* ===== Hojas (ventanas inferiores) ===== */
 var lastSheet=null;
@@ -879,7 +885,7 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     '<p class="muted small" style="margin:0">'+(s.open
       ?'Tienes 8 minutos para pagar tu parte. El partido queda abierto 4 horas para que se apunte gente; si en ese tiempo no se completa, se cancela y se devuelve el dinero.'
       :'Si pagas solo tu parte, tus compañeros tienen 20 minutos para pagar la suya con el enlace que les mandes; si no pagan todos, la pista se libera y se devuelve el dinero. Pagando la pista entera queda confirmada al momento.')+
-    ' Cada pago incluye '+euro(FEE)+' de gestión.</p>'+
+    (FEE>0?' Cada pago incluye '+euro(FEE)+' de gestión.':' Pagas con tarjeta y el dinero va directo al club.')+'</p>'+
     '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un momento…':'Reservar y pagar')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='match'){h=vMatch();}
   else if(s.type==='quizIntro'){
@@ -914,6 +920,18 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     h='<h2>Buscar jugadores</h2><form data-form="find" class="row" style="margin:12px 0"><input class="input" name="q" id="findQ" placeholder="Nombre del jugador" minlength="2" maxlength="40" autocomplete="off" value="'+esc(s.q||'')+'" required><button class="btn" type="submit">Buscar</button></form>'+
       (s.loading?'<p class="muted"><span class="spin"></span> Buscando…</p>':s.list?(s.list.length?'<div class="list">'+s.list.map(personRow).join('')+'</div>':'<p class="muted">No hay nadie con ese nombre.</p>'):'<p class="muted small">Escribe al menos 2 letras.</p>')+
       '<button class="btn btn-line btn-block" style="margin-top:12px" data-act="close">Cerrar</button>';}
+  else if(s.type==='stripeKey'){var cc=S.cobros||{};
+    h='<h2>Cuenta de Stripe del club</h2><p class="muted small" style="margin:6px 0 12px">Los jugadores pagan con tarjeta y el dinero llega a <b>vuestra</b> cuenta de Stripe. Revo no lo toca ni cobra comisión; solo Stripe cobra su tarifa por pago.</p>'+
+    '<ol class="steps"><li>Entra en <b>dashboard.stripe.com</b> con la cuenta del club (si no tenéis, se crea gratis).</li>'+
+    '<li>Ve a <b>Desarrolladores → Claves de API</b>.</li>'+
+    '<li>Lo más seguro: <b>Crear clave restringida</b> con permiso de <b>escritura</b> en «Checkout Sessions», «Refunds» y «Webhook Endpoints», y de <b>lectura</b> en «PaymentIntents». También vale la «Clave secreta» normal.</li>'+
+    '<li>Copia la clave (empieza por <code>rk_</code> o <code>sk_</code>) y pégala aquí.</li></ol>'+
+    (cc.reales_permitidos?'':'<p class="small" style="margin:0 0 10px;color:var(--warn)">Revo está aún en pruebas: de momento solo se aceptan claves de prueba (<code>sk_test_…</code> o <code>rk_test_…</code>).</p>')+
+    '<form class="col" data-form="stripeKey"><div class="field"><label for="sk-key">Clave de Stripe</label><input class="input" id="sk-key" name="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="rk_live_… o sk_live_…" minlength="20" maxlength="260" required></div>'+
+    '<p class="muted small" style="margin:0">Se guarda cifrada y nadie puede volver a verla, ni siquiera vosotros. Si un día la cambiáis en Stripe, pegad aquí la nueva.</p>'+
+    '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Comprobando con Stripe…':'Guardar y activar')+'</button></form>'+
+    (cc.modo==='propia'?'<button class="btn btn-danger btn-block" style="margin-top:8px" data-act="quitarClave"'+(S.busy?' disabled':'')+'>Quitar la clave del club</button>':'')+
+    '<button class="btn btn-line btn-block" style="margin-top:8px" data-act="close">Cerrar</button>';}
   else if(s.type==='levels'){var mine=lvlInfo(S.me.level);
     h='<h2>Guía de niveles</h2><p class="muted small" style="margin:6px 0 12px">Elige el que más se parezca a cómo juegas. Las categorías son orientativas: cada club y cada liga las ajusta a su manera.</p><div class="list">'+
     LEVELS.map(function(L){var on=L===mine;return '<button type="button" class="card lvrow'+(on?' on':'')+'" data-act="pickLevel" data-v="'+L.from.toFixed(1)+'">'+
@@ -948,7 +966,7 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
   else if(s.type==='cancel'){var lv=s.leave;
     h='<h2>'+(lv?'¿Salirte del partido?':'¿Cancelar la reserva?')+'</h2>'+
     (s.loadingPreview?'<p class="muted"><span class="spin"></span> Calculando devolución…</p>':
-     s.preview?(!lv&&s.preview.refund_cents===0&&s.preview.pct===100?'<div class="card"><b>Se devuelve todo a los jugadores</b><p class="muted small" style="margin:6px 0 0">Cuando cancela el club, cada jugador recupera lo que pagó, gestión incluida.</p></div>'
+     s.preview?(!lv&&s.preview.refund_cents===0&&s.preview.pct===100?'<div class="card"><b>Se devuelve todo a los jugadores</b><p class="muted small" style="margin:6px 0 0">Cuando cancela el club, cada jugador recupera todo lo que pagó.</p></div>'
       :'<div class="card"><div class="row between"><span>'+(lv?'Te devolvemos':'Te devolvemos a ti')+'</span><b>'+esc(s.preview.refund)+'</b></div><p class="muted small" style="margin:6px 0 0">'+refundNote(s.preview,lv)+'</p></div>'):'')+
     '<p class="muted">'+(lv?'Tu hueco quedará libre para otro jugador.':'La hora quedará libre para todos.')+'</p>'+
     '<div class="col"><button class="btn btn-danger btn-block" data-act="doCancel" data-v="'+s.id+'"'+(S.busy||s.loadingPreview?' disabled':'')+'>'+(lv?'Sí, salirme':'Sí, cancelar')+'</button><button class="btn btn-line btn-block" data-act="'+(s.back?'match':'close')+'" data-v="'+(s.back||'')+'">No</button></div>';}
@@ -1023,7 +1041,7 @@ function startDate(day,min){var guess=new Date(day+'T00:00:00Z');guess=new Date(
   var shown=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute);return new Date(guess.getTime()-(shown-guess.getTime()));}
 function findBooking(id){var all=[].concat(S.match?[S.match]:[],S.panel||[],S.mine||[],S.open||[]);for(var i=0;i<all.length;i++)if(all[i].id===id)return all[i];return null;}
 function refundNote(pv,leave){
-  if(!pv.confirmed)return 'Como la reserva aún no estaba confirmada, se devuelve la pista entera. Los '+euro(FEE)+' de gestión no se devuelven.';
+  if(!pv.confirmed)return 'Como la reserva aún no estaba confirmada, se devuelve la pista entera.'+(FEE>0?' Los '+euro(FEE)+' de gestión no se devuelven.':'');
   if(pv.pct===100)return 'Faltan más de 24 horas: se devuelve el 100 % de la pista.';
   if(pv.pct===75)return 'Faltan entre 24 y 6 horas: se devuelve el 75 % de la pista.';
   return 'Faltan menos de 6 horas: ya no hay devolución.'+(leave?'':' A los demás jugadores se les devuelve todo.');}
@@ -1128,9 +1146,11 @@ var A={
     var link=location.origin+location.pathname+'#p='+el.dataset.v;
     var msg='¿Te apuntas? Partido en el Olimpo, '+dayLong(b.day).toLowerCase()+' a las '+hm(b.start_min)+' en la '+ct.name+(b.lvl_min!=null?' (nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max)+')':'')+'. Falta'+(faltan>1?'n ':' ')+faltan+'. Apúntate aquí: '+link;
     window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');},
-  cobros:async function(){S.busy=true;render();
-    try{var r=await fx('club-stripe',{club_id:CLUB,action:'conectar'});if(r&&r.url){window.location.href=r.url;return;}}
-    catch(e){toast(errMsg(e),true);}S.busy=false;render();},
+  cobros:function(){S.busy=false;S.sheet={type:'stripeKey'};renderSheet();},
+  quitarClave:async function(){if(!S.sheet||!S.sheet.sure){S.sheet={type:'stripeKey',sure:true};toast('Pulsa otra vez para confirmar: se dejará de poder pagar online',true);return;}
+    S.busy=true;renderSheet();
+    try{S.cobros=await fx('club-stripe',{club_id:CLUB,action:'quitar'});S.sheet=null;toast('Clave quitada');}catch(e){toast(errMsg(e),true);}
+    S.busy=false;renderSheet();render();},
   logout:async function(){await sb.auth.signOut();}
 };
 var FORMS={
@@ -1175,6 +1195,12 @@ var FORMS={
         if(S.admin){toast('Panel del club activado');S.tab='club';S.busy=false;render();await refresh();return;}}
     }catch(e){toast(errMsg(e),true);}
     S.busy=false;render();},
+  stripeKey:async function(f){var inp=f.querySelector('[name="key"]'),key=String(inp.value||'').trim();
+    if(/^pk_/.test(key)){toast('Esa es la clave pública (pk_). Hace falta la secreta: empieza por sk_ o rk_',true);return;}
+    S.busy=true;renderSheet();
+    try{var r=await fx('club-stripe',{club_id:CLUB,action:'guardar',key:key});key=null;S.cobros=r;S.sheet=null;S.busy=false;renderSheet();render();
+      toast(r.real?'Pago online activado: el dinero llega a vuestra cuenta':'Clave de prueba guardada: los pagos son de mentira');celebrate();}
+    catch(e){S.busy=false;renderSheet();toast(errMsg(e),true);}},
   find:async function(f){var qv=String(new FormData(f).get('q')||'').trim().replace(/[%_,()]/g,'');if(qv.length<2)return;
     S.sheet={type:'find',q:qv,loading:true};renderSheet();
     try{var r=await q(sb.from('profiles').select('id,name,level,avatar_url').ilike('name','%'+qv+'%').neq('id',S.user.id).order('name').limit(25));
