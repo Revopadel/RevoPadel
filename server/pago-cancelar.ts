@@ -41,7 +41,7 @@ Deno.serve((req) => handle(req, async () => {
     if (!me) throw new UserError("No estás en este partido");
     for (const p of await paidPayments(sb, bookingId, user.id)) plan.push({ p, cents: p.court_cents * pct / 100 });
     const back = plan.reduce((a, x) => a + Math.round(x.cents), 0);
-    if (preview) return json({ pct, refund: euro(back), refund_cents: back, confirmed });
+    if (preview) return json({ pct, refund: euro(back), refund_cents: back, confirmed, club: !!b.pay_at_club });
 
     // Si hay algo que devolver hace falta el Stripe del club; si no, basta con intentarlo
     const st = b.kind !== "app" ? null : plan.length ? (await clubStripe(sb, b.club_id)).st : (await clubStripeOrNull(sb, b.club_id))?.st ?? null;
@@ -50,13 +50,14 @@ Deno.serve((req) => handle(req, async () => {
     await sb.from("booking_players").delete().eq("id", me.id);
     // Partido abierto confirmado: vuelve a faltar alguien y otro puede ocupar el hueco.
     // Reserva privada confirmada: la pista sigue reservada para los demás.
-    if (confirmed && b.pay_mode === "split" && b.is_open) {
+    // (Las que se pagan en el club no vuelven a «pendiente»: no hay pago que esperar.)
+    if (confirmed && b.pay_mode === "split" && b.is_open && !b.pay_at_club) {
       await sb.from("bookings").update({
         payment_state: "pending", confirmed_at: null,
         pay_deadline: new Date(Date.now() + 4 * 3_600_000).toISOString(),   // otras 4 horas para encontrar a alguien
       }).eq("id", bookingId);
     }
-    if (b.kind === "app" && b.owner_id && me.paid_at) {   // solo si de verdad estaba dentro (había pagado)
+    if (b.kind === "app" && b.owner_id && (me.paid_at || b.pay_at_club)) {   // solo si de verdad estaba dentro (había pagado, o se paga en el club)
       try {
         const name = await playerName(sb, user.id);
         const desc = await describeBooking(sb, b);
@@ -77,7 +78,7 @@ Deno.serve((req) => handle(req, async () => {
     plan.push({ p, cents });
   }
   const mine = plan.filter((x) => x.p.user_id === user.id).reduce((a, x) => a + Math.round(x.cents), 0);
-  if (preview) return json({ pct: isAdmin && !isOwner ? 100 : pct, refund: euro(mine), refund_cents: mine, confirmed, others: plan.length - plan.filter((x) => x.p.user_id === user.id).length });
+  if (preview) return json({ pct: isAdmin && !isOwner ? 100 : pct, refund: euro(mine), refund_cents: mine, confirmed, club: !!b.pay_at_club, others: plan.length - plan.filter((x) => x.p.user_id === user.id).length });
 
   const st = b.kind !== "app" ? null : plan.length ? (await clubStripe(sb, b.club_id)).st : (await clubStripeOrNull(sb, b.club_id))?.st ?? null;
   if (st) await expireOpenSessions(st, sb, bookingId);   // cerrar las páginas de pago abiertas

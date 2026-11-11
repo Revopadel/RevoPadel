@@ -1,11 +1,11 @@
 // Revo Pádel · panel del club (solo administradores del club)
 // Cuerpo: { club_id, action, ... }
 //   caja        { day }                         → lo cobrado ese día
-//   guardar     { price_morning, price_afternoon, cut_min, open_min, close_min, contact_phone?, contact_email? } → precios, horario y contacto
+//   guardar     { price_morning, price_afternoon, cut_min, open_min, close_min, contact_phone?, contact_email?, pay_mode? } → precios, horario, contacto y forma de pago
 //   fijos       {}                              → lista de reservas fijas
 //   fijo_crear  { court_id, weekday, start_min, kind, label?, until? }
 //   fijo_borrar { id }                          → deja de repetirse y quita las próximas
-import { admin, currentUser, euro, handle, json, madridDay, materializeFixed, UserError } from "./revo.ts";
+import { admin, clubStripeOrNull, currentUser, euro, handle, json, madridDay, materializeFixed, UserError } from "./revo.ts";
 
 const isDay = (s: unknown) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
@@ -25,7 +25,7 @@ Deno.serve((req) => handle(req, async () => {
   // ----- Caja del día -----
   if (action === "caja") {
     if (!isDay(body.day)) throw new UserError("Día no válido");
-    const { data: bks } = await sb.from("bookings").select("id, kind, court_id, start_min, status")
+    const { data: bks } = await sb.from("bookings").select("id, kind, court_id, start_min, status, pay_at_club")
       .eq("club_id", clubId).eq("day", body.day);
     const ids = (bks ?? []).map((b) => b.id);
     const { data: pays } = ids.length
@@ -39,16 +39,19 @@ Deno.serve((req) => handle(req, async () => {
     }
     const { data: courts } = await sb.from("courts").select("id, size").eq("club_id", clubId);
     const size = new Map((courts ?? []).map((c) => [c.id, c.size]));
-    let mostrador = 0, telefono = 0;
+    // A cobrar en el club: las apuntadas por teléfono y las de la app que eligieron pagar al llegar
+    let mostrador = 0, telefono = 0, en_club = 0;
     for (const b of bks ?? []) {
-      if (b.status !== "active" || b.kind !== "manual") continue;
-      telefono++;
+      if (b.status !== "active") continue;
+      if (b.kind === "manual") telefono++;
+      else if (b.kind === "app" && b.pay_at_club) en_club++;
+      else continue;
       const eur = b.start_min < club.cut_min ? Number(club.price_morning) : Number(club.price_afternoon);
       mostrador += Math.round(eur * 100) * (size.get(b.court_id) ?? 4);
     }
     return json({
       pagos, pistas: euro(pistas), pistas_cents: pistas, comision: euro(comision), neto: euro(pistas - comision),
-      devuelto: euro(devuelto), telefono, mostrador: euro(mostrador), mostrador_cents: mostrador,
+      devuelto: euro(devuelto), telefono, en_club, mostrador: euro(mostrador), mostrador_cents: mostrador,
     });
   }
 
@@ -72,7 +75,17 @@ Deno.serve((req) => handle(req, async () => {
     if ((fx ?? []).some((f) => f.start_min < open || f.start_min + club.slot_min > close || (f.start_min - open) % club.slot_min !== 0)) {
       throw new UserError("Hay reservas fijas que quedarían fuera del nuevo horario. Quítalas antes.");
     }
+    // Cómo pagan los jugadores (si no viene, se deja como está)
+    let payMode = club.pay_mode as string;
+    if (body.pay_mode != null) {
+      payMode = String(body.pay_mode);
+      if (!["online", "club", "ambos"].includes(payMode)) throw new UserError("Forma de pago no válida");
+      if (payMode !== "club" && !(await clubStripeOrNull(sb, clubId))) {
+        throw new UserError("Para cobrar online, conecta antes la cuenta de Stripe del club (en «Cobros»)");
+      }
+    }
     const { error } = await sb.from("clubs").update({
+      pay_mode: payMode,
       price_morning: Math.round(pm * 100) / 100, price_afternoon: Math.round(pa * 100) / 100, cut_min: cut, open_min: open, close_min: close,
       contact_phone: phone || null, contact_email: email || null,
     }).eq("id", clubId);

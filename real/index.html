@@ -597,9 +597,10 @@ async function loadBase(){
   ]);
   S.club=res[0];S.courts=res[1];S.me=res[2];S.admin=res[3].some(function(a){return a.club_id===CLUB;});
   try{var fl=await q(sb.from('follows').select('followee_id').eq('follower_id',S.user.id));S.following={};fl.forEach(function(f){S.following[f.followee_id]=1;});}catch(e){S.following={};}
+  try{S.blocked=(await q(sb.from('club_blocks').select('club_id').eq('club_id',CLUB).eq('user_id',S.user.id))).length>0;}catch(e){S.blocked=false;}
   var n=nowM().day;if(!S.day)S.day=n;if(!S.panelDay)S.panelDay=n;
 }
-var SEL='id,court_id,day,start_min,kind,label,is_open,fixed_id,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,pay_deadline,booking_players(user_id,guest_name,paid_at,profiles(name,level,avatar_url))';
+var SEL='id,court_id,day,start_min,kind,label,is_open,fixed_id,lvl_min,lvl_max,owner_id,status,payment_state,pay_mode,hold_until,pay_deadline,pay_at_club,attend_confirmed_at,no_show,booking_players(user_id,guest_name,paid_at,profiles(name,level,avatar_url))';
 var FEE=0;   // Revo no cobra gestión por pago: lo que se paga es la pista, y va directo al club
 /* Llama a una función del servidor (pagos) y devuelve su respuesta o un error legible */
 async function fx(name,body){var r=await sb.functions.invoke(name,{body:body});
@@ -619,12 +620,13 @@ async function loadTab(){
   else if(S.tab==='perfil'){S.fc=await followCounts(S.user.id);}
   else if(S.tab==='mias'){var rows2=await q(sb.from('bookings').select(SEL).eq('status','active').gte('day',n).order('day').order('start_min'));
     S.mine=rows2.filter(function(b){return !isPast(b.day,b.start_min)&&b.booking_players.some(function(p){return p.user_id===S.user.id;});});}
-  else if(S.tab==='club'&&S.admin){S.panel=await q(sb.from('bookings').select(SEL).eq('club_id',CLUB).eq('status','active').eq('day',S.panelDay));
+  else if(S.tab==='club'&&S.admin){sb.from('club_blocks').select('user_id,created_at,profiles(name,level,avatar_url)').eq('club_id',CLUB).order('created_at',{ascending:false}).then(function(r){S.blocks=r.data||[];if(S.tab==='club'&&S.blocks.length)render();});
+    S.panel=await q(sb.from('bookings').select(SEL).eq('club_id',CLUB).eq('status','active').eq('day',S.panelDay));
     var cd=S.panelDay;fx('club-ajustes',{club_id:CLUB,action:'caja',day:cd}).then(function(r){if(S.panelDay===cd){S.caja=r;if(S.tab==='club')render();}}).catch(function(){S.caja=null;});
     if(!S.cobros||S.cobros.stale){S.cobros={loading:true};fx('club-stripe',{club_id:CLUB,action:'estado'}).then(function(r){S.cobros=r||{};if(S.tab==='club')render();}).catch(function(e){S.cobros={error:errMsg(e)};if(S.tab==='club')render();});}}
   S.loaded[tab0]=true;
 }
-async function myUpcoming(from){return await q(sb.from('booking_players').select('booking_id,bookings!inner(id,day,start_min,court_id,status,payment_state,kind,is_open)').eq('user_id',S.user.id).gte('bookings.day',from).eq('bookings.status','active'));}
+async function myUpcoming(from){return await q(sb.from('booking_players').select('booking_id,bookings!inner(id,day,start_min,court_id,status,payment_state,kind,is_open,pay_at_club,attend_confirmed_at,owner_id)').eq('user_id',S.user.id).gte('bookings.day',from).eq('bookings.status','active'));}
 async function myIds(from,to){var r=await q(sb.from('booking_players').select('booking_id,bookings!inner(day,status)').eq('user_id',S.user.id).gte('bookings.day',from).lte('bookings.day',to).eq('bookings.status','active'));
   return r.map(function(x){return x.booking_id;});}
 async function refresh(){try{await loadTab();}catch(e){toast(errMsg(e),true);S.loaded[S.tab]=true;}S.fetching=false;var a=S.enter;S.enter=false;render(a);}
@@ -674,6 +676,13 @@ function dayChips(sel,act){var n=nowM().day,h='<div class="days">';
   for(var i=0;i<14;i++){var d=addDays(n,i);h+='<button class="day'+(d===sel?' on':'')+'" data-act="'+act+'" data-v="'+d+'"><span>'+(i===0?'Hoy':dfmt(d,{weekday:'short'}).replace('.',''))+'</span><b>'+dfmt(d,{day:'numeric'})+'</b></button>';}
   return h+'</div>';}
 
+/* ===== Pago en el club ===== */
+function payModeClub(){return (S.club&&S.club.pay_mode)||'online';}
+/* Horas que faltan para una reserva */
+function hoursTo(b){return (startDate(b.day,b.start_min)-Date.now())/36e5;}
+/* ¿Tengo que confirmar que voy? (solo quien reservó, en reservas que se pagan en el club) */
+function needsConfirm(b){return !!(b&&b.pay_at_club&&!b.attend_confirmed_at&&b.owner_id===S.user.id&&hoursTo(b)>0);}
+function confirmLimit(b){return new Intl.DateTimeFormat('es-ES',{timeZone:TZ,weekday:'long',hour:'2-digit',minute:'2-digit'}).format(new Date(startDate(b.day,b.start_min).getTime()-3*36e5));}
 /* ===== Piezas visuales ===== */
 function inTime(b){var n=nowM(),d=Math.round((new Date(b.day+'T12:00:00Z')-new Date(n.day+'T12:00:00Z'))/864e5),m=d*1440+b.start_min-n.min;
   if(m<=0)return 'Ahora';if(m<60)return 'En '+m+' min';if(d===0)return 'En '+Math.round(m/60)+' h';if(d===1)return 'Mañana';return 'En '+d+' días';}
@@ -689,7 +698,7 @@ function homeCard(){var me=S.me,nx=S.next,first=esc(String(me.name||'').split(' 
   if(nx){var ct=court(nx.court_id),pend=nx.kind==='app'&&nx.payment_state==='pending';
     h+='<button type="button" class="home-next" data-act="match" data-v="'+nx.id+'"><span class="hn-when"><small>'+esc(inTime(nx))+'</small><b>'+hm(nx.start_min)+'</b></span>'+
       '<span class="hn-info"><b>Tu próximo partido</b><span style="text-transform:capitalize">'+esc(dayLong(nx.day))+' · '+esc(ct?ct.name:'')+'</span>'+
-      '<span class="tag '+(pend?'warn':'lime')+'">'+(pend?'Pendiente de pago':'Confirmado')+'</span></span><span class="hn-go" aria-hidden="true">›</span></button>';}
+      '<span class="tag '+(pend||needsConfirm(nx)?'warn':'lime')+'">'+(pend?'Pendiente de pago':needsConfirm(nx)?(hoursTo(nx)<=24?'Confirma que vas':'Se paga en el club'):nx.pay_at_club?'Se paga en el club':'Confirmado')+'</span></span><span class="hn-go" aria-hidden="true">›</span></button>';}
   else h+='<div class="home-next none"><span class="hn-info"><b>Aún no tienes partido</b><span>Elige día y hora, o únete a un partido abierto.</span></span><button type="button" class="btn btn-sm btn-blue" data-act="tab" data-v="partidos">Ver partidos</button></div>';
   return h+'</div>';}
 
@@ -715,11 +724,11 @@ function vReservar(){
 
 function matchCard(b){var ct=court(b.court_id),n=b.booking_players.length,me=b.booking_players.some(function(p){return p.user_id===S.user.id;});
   var pend=b.kind==='app'&&b.payment_state==='pending',left=ct.size-n,cd=cdHtml(b);
-  var st=pend?(b.is_open&&left>0?'<span class="tag">Falta'+(left>1?'n ':' ')+left+'</span>':'<span class="tag warn">Pagado '+paidCount(b)+'/'+ct.size+'</span>'):'<span class="tag lime">Confirmada</span>';
+  var st=needsConfirm(b)&&hoursTo(b)<=24?'<span class="tag warn">Confirma que vas</span>':pend?(b.is_open&&left>0?'<span class="tag">Falta'+(left>1?'n ':' ')+left+'</span>':'<span class="tag warn">Pagado '+paidCount(b)+'/'+ct.size+'</span>'):'<span class="tag lime">Confirmada</span>';
   return '<button class="card mc'+(me?' mine':'')+'" data-act="match" data-v="'+b.id+'">'+
     '<span class="mc-when"><small>'+esc(dfmt(b.day,{weekday:'short'}).replace('.',''))+' '+dfmt(b.day,{day:'numeric'})+'</small><b>'+hm(b.start_min)+'</b><em>'+esc(inTime(b))+'</em></span>'+
     '<span class="mc-body"><span class="row between"><b>'+esc(ct.name)+'</b>'+st+'</span>'+
-    '<span class="muted small">'+(b.lvl_min!=null?'Nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):esc(ct.description||''))+(me?' · <span style="color:var(--ok);font-weight:700">'+(b.owner_id===S.user.id?'Organizas tú':'Estás apuntado')+'</span>':'')+'</span>'+
+    '<span class="muted small">'+(b.lvl_min!=null?'Nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):esc(ct.description||''))+(b.pay_at_club?' · se paga en el club':'')+(me?' · <span style="color:var(--ok);font-weight:700">'+(b.owner_id===S.user.id?'Organizas tú':'Estás apuntado')+'</span>':'')+'</span>'+
     '<span class="row between" style="margin-top:8px">'+seats(b,ct.size)+(cd||'')+'</span>'+
     friendsLine(b)+'</span></button>';}
 function friendsIn(b){return b.booking_players.filter(function(p){return p.user_id&&S.following&&S.following[p.user_id];});}
@@ -807,7 +816,7 @@ function boardCell(b,ct,m,past){
     else if(b.kind==='manual'){cls='tel';title='📞 '+esc(b.label||(b.booking_players[0]&&b.booking_players[0].guest_name)||'Teléfono');sub='Cobrar en el club';}
     else{var ow=b.booking_players.filter(function(p){return p.user_id===b.owner_id;})[0],pend=b.payment_state==='pending';
       cls='app'+(pend?' pend':'');title=esc(ow?pname(ow):'App');
-      sub=(pend?'<span class="warnc">Pagado '+paidCount(b)+'/'+ct.size+'</span>':'<span class="paid">Pagada</span>')+' · '+b.booking_players.length+'/'+ct.size+(b.is_open?' · abierto':'');}
+      sub=(b.no_show?'<span class="warnc">No se presentaron</span>':b.pay_at_club?'<span class="warnc">Cobrar en el club</span>'+(b.attend_confirmed_at?'':' · sin confirmar'):pend?'<span class="warnc">Pagado '+paidCount(b)+'/'+ct.size+'</span>':'<span class="paid">Pagada</span>')+' · '+b.booking_players.length+'/'+ct.size+(b.is_open?' · abierto':'');}
     if(b.fixed_id)sub='<span class="tag fixtag" style="margin:0 4px 0 0">Fija</span>'+sub;
     act=b.kind==='app'?'data-act="match" data-v="'+b.id+'"':(past?'':'data-act="askCancel" data-v="'+b.id+'"');
     return '<td class="bc '+cls+(past?' was':'')+'">'+(act?'<button class="bk" '+act+' title="'+(b.kind==='app'?'Ver partido':'Cancelar')+'">':'<div class="bk">')+'<b>'+title+'</b><span>'+sub+'</span>'+(act?'</button>':'</div>')+'</td>';}
@@ -821,14 +830,14 @@ function clubBoard(by){var h='<div class="board"><table><thead><tr><th class="bh
   return h+'</tbody></table></div><div class="legend"><span class="lg app"></span>App <span class="lg pend"></span>Falta pagar <span class="lg tel"></span>Teléfono <span class="lg blk"></span>Bloqueada <span class="lg free"></span>Libre</div>';}
 function vClubWide(by,total,cap){
   var h='<div class="clubhead"><div><h2 style="margin:4px 0 0">Panel del club</h2><p class="muted small" style="margin:4px 0 0">Haz clic en una hora libre para apuntar una reserva por teléfono o bloquear la pista.</p></div>'+
-    '<div class="row" style="gap:8px"><button class="btn btn-line btn-sm" data-act="ajustes">Precios, horario y contacto</button><button class="btn btn-line btn-sm" data-act="fijos">Reservas fijas</button></div></div>'+
+    '<div class="row" style="gap:8px"><button class="btn btn-line btn-sm" data-act="ajustes">Precios, horario y contacto</button><button class="btn btn-line btn-sm" data-act="fijos">Reservas fijas</button>'+(S.blocks&&S.blocks.length?'<button class="btn btn-line btn-sm" data-act="blocks">Bloqueados ('+S.blocks.length+')</button>':'')+'</div></div>'+
     dayChips(S.panelDay,'panelDay');
   h+='<div class="clubwide"><div class="clubmain"><p style="margin:2px 0 8px;font-weight:700;text-transform:capitalize">'+esc(dayLong(S.panelDay))+'</p>'+clubBoard(by)+'</div>';
   h+='<aside class="clubside"><div class="card kpi"><b>'+total+'<small> / '+cap+'</small></b><span class="muted small">horas ocupadas · '+(cap?Math.round(total*100/cap):0)+' %</span><div class="bar"><i style="width:'+(cap?Math.round(total*100/cap):0)+'%"></i></div></div>'+cajaCard()+cobrosCard()+'</aside></div>';
   return h;}
 function vClub(){if(isWide()){var by0={};S.panel.forEach(function(b){by0[b.court_id+'|'+b.start_min]=b;});return vClubWide(by0,S.panel.length,S.courts.length*slotList().length);}
   var h='<h2 style="margin-top:4px">Panel del club</h2><p class="muted small" style="margin:4px 0 8px">Todas las reservas del día. Apunta las que te llegan por teléfono o bloquea pistas.</p>'+cobrosCard()+
-    '<div class="row" style="gap:8px;margin:0 0 10px"><button class="btn btn-line btn-sm" style="flex:1" data-act="ajustes">Precios, horario y contacto</button><button class="btn btn-line btn-sm" style="flex:1" data-act="fijos">Reservas fijas</button></div>'+
+    '<div class="row" style="gap:8px;margin:0 0 10px"><button class="btn btn-line btn-sm" style="flex:1" data-act="ajustes">Precios, horario y contacto</button><button class="btn btn-line btn-sm" style="flex:1" data-act="fijos">Reservas fijas</button>'+(S.blocks&&S.blocks.length?'<button class="btn btn-line btn-sm" data-act="blocks">Bloqueados ('+S.blocks.length+')</button>':'')+'</div>'+
     dayChips(S.panelDay,'panelDay');
   var by={};S.panel.forEach(function(b){by[b.court_id+'|'+b.start_min]=b;});
   var total=S.panel.length,cap=S.courts.length*slotList().length;
@@ -838,9 +847,9 @@ function vClub(){if(isWide()){var by0={};S.panel.forEach(function(b){by0[b.court
     slotList().forEach(function(m){var b=by[ct.id+'|'+m],past=isPast(S.panelDay,m),t='<b>'+hm(m)+'</b> ';
       if(b){var who;if(b.kind==='blocked')who='Bloqueada'+(b.label?': '+esc(b.label):'');
         else if(b.kind==='manual')who='Teléfono: '+esc(b.label||(b.booking_players[0]&&b.booking_players[0].guest_name)||'');
-        else{var ow=b.booking_players.filter(function(p){return p.user_id===b.owner_id;})[0];who=esc(ow?pname(ow):'App')+' · '+(b.payment_state==='confirmed'?'<span class="paid">pagada</span>':'<span class="warnc">pagado '+paidCount(b)+'/'+ct.size+'</span>')+(b.is_open?' · abierto':'');}
+        else{var ow=b.booking_players.filter(function(p){return p.user_id===b.owner_id;})[0];who=esc(ow?pname(ow):'App')+' · '+(b.no_show?'<span class="warnc">no se presentaron</span>':b.pay_at_club?'<span class="warnc">cobrar en el club</span>'+(b.attend_confirmed_at?'':' (sin confirmar)'):b.payment_state==='confirmed'?'<span class="paid">pagada</span>':'<span class="warnc">pagado '+paidCount(b)+'/'+ct.size+'</span>')+(b.is_open?' · abierto':'');}
         if(b.fixed_id)who+=' <span class="tag fixtag">Fija</span>';
-        h+='<div class="pl"><span>'+t+who+'</span>'+(past?'':'<button class="btn btn-danger btn-sm" data-act="askCancel" data-v="'+b.id+'">Cancelar</button>')+'</div>';}
+        h+='<div class="pl"><span>'+t+who+'</span>'+(past?(b.kind==='app'&&b.pay_at_club&&!b.no_show?'<button class="btn btn-line btn-sm" data-act="match" data-v="'+b.id+'">¿Vinieron?</button>':''):'<button class="btn btn-danger btn-sm" data-act="askCancel" data-v="'+b.id+'">Cancelar</button>')+'</div>';}
       else if(past)h+='<div class="pl empty"><span>'+t+'Libre</span></div>';
       else h+='<div class="pl empty"><span>'+t+'Libre</span><span class="row"><button class="btn btn-line btn-sm" data-act="admin" data-k="manual" data-court="'+ct.id+'" data-v="'+m+'">Teléfono</button><button class="btn btn-line btn-sm" data-act="admin" data-k="blocked" data-court="'+ct.id+'" data-v="'+m+'">Bloquear</button></span></div>';});
     h+='</div></div>';});
@@ -851,7 +860,7 @@ function wdOf(day){var w=new Date(day+'T12:00:00Z').getUTCDay();return w===0?7:w
 function cajaCard(){var c=S.caja;if(!c)return '<div class="card muted small"><span class="spin"></span> Calculando la caja del día…</div>';
   return '<div class="card caja"><b>Caja del día</b><div class="cajagrid">'+
     '<div><span class="muted small">Pistas pagadas en la app</span><b>'+esc(c.pistas)+'</b><span class="muted small">'+c.pagos+' pago'+(c.pagos===1?'':'s')+' · llegan enteros al club</span></div>'+
-    '<div><span class="muted small">A cobrar en el club</span><b>'+esc(c.mostrador)+'</b><span class="muted small">'+c.telefono+' reserva'+(c.telefono===1?'':'s')+' por teléfono</span></div></div>'+
+    '<div><span class="muted small">A cobrar en el club</span><b>'+esc(c.mostrador)+'</b><span class="muted small">'+c.telefono+' por teléfono'+(c.en_club?' · '+c.en_club+' de la app':'')+'</span></div></div>'+
     (c.devuelto&&c.devuelto!=='0,00 €'?'<p class="muted small" style="margin:6px 0 0">Devuelto a jugadores este día: '+esc(c.devuelto)+'</p>':'')+'</div>';}
 function toHM(m){return hm(m);}
 function fromHM(v){var p=String(v||'').split(':');return (+p[0])*60+(+p[1]||0);}
@@ -861,7 +870,7 @@ function cobrosCard(){var c=S.cobros;if(!c||c.loading)return '<div class="card m
     '<div class="row between small muted"><span>Clave: <code>'+esc(c.clave||'')+'</code></span><button type="button" class="linkbtn" style="padding:0" data-act="cobros">Cambiar</button></div>'+
     (c.aviso?'':'<p class="small" style="margin:0;color:var(--warn)">A la clave le falta permiso para «Webhook Endpoints»: los pagos funcionan, pero pueden tardar hasta un minuto en confirmarse.</p>')+'</div>';
   return '<div class="card col"><div><b>Activa el pago online del club</b><p class="muted small" style="margin:4px 0 0">Conecta la cuenta de Stripe del club y el dinero de cada reserva os llegará directo, sin pasar por Revo.'+
-    (c.modo==='compartida'?' Ahora mismo los pagos son solo de prueba, con una cuenta de pruebas de Revo.':' Hasta entonces no se puede pagar desde la app.')+'</p></div>'+
+    (c.modo==='compartida'?' Ahora mismo los pagos son solo de prueba, con una cuenta de pruebas de Revo.':' Hasta entonces no se puede pagar con tarjeta desde la app.')+'</p></div>'+
     '<button class="btn btn-line" data-act="cobros">Conectar la cuenta de Stripe</button></div>';}
 
 /* ===== Hojas (ventanas inferiores) ===== */
@@ -879,14 +888,22 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     '<div class="card"><div class="row between"><span>Por jugador</span><b>'+euro(p)+'</b></div><div class="row between muted small" style="margin-top:4px"><span>Pista completa ('+ct.size+' jugadores)</span><span>'+euro(p*ct.size)+'</span></div></div>'+
     '<form class="col" data-form="book"><label class="row card" style="margin:0"><input type="checkbox" name="open" id="b-open" '+(s.open?'checked':'')+' data-act="toggleOpen" style="width:20px;height:20px"> <span><b>Partido abierto</b><br><span class="muted small">Que se apunte gente del club para completar la pista</span></span></label>'+
     (s.open?'<div class="row"><div class="field" style="flex:1"><label for="b-min">Nivel mínimo</label><select class="input" id="b-min" name="lmin">'+opts(mn)+'</select></div><div class="field" style="flex:1"><label for="b-max">Nivel máximo</label><select class="input" id="b-max" name="lmax">'+opts(mx)+'</select></div></div><p class="muted small" id="b-hint" style="margin:-4px 0 0">'+lvlRange(mn,mx)+' <button type="button" class="linkbtn" data-act="levels">Guía de niveles</button></p>':'')+
-    '<fieldset class="paychoice"><legend>¿Cómo pagas?</legend>'+
-    '<label class="card row"><input type="radio" name="pay" value="share" '+(s.pay!=='full'?'checked':'')+' data-act="payMode"><span><b>Mi parte · '+euro(p+FEE)+'</b><br><span class="muted small">Cada uno paga lo suyo. La reserva se confirma cuando hayan pagado los '+ct.size+'.</span></span></label>'+
-    '<label class="card row"><input type="radio" name="pay" value="full" '+(s.pay==='full'?'checked':'')+' data-act="payMode"><span><b>Pista entera · '+euro(p*ct.size+FEE)+'</b><br><span class="muted small">Para cuando los demás no tienen Revo. Queda confirmada al pagar.</span></span></label></fieldset>'+
-    '<p class="muted small" style="margin:0">'+(s.open
-      ?'Tienes 8 minutos para pagar tu parte. El partido queda abierto 4 horas para que se apunte gente; si en ese tiempo no se completa, se cancela y se devuelve el dinero.'
-      :'Si pagas solo tu parte, tus compañeros tienen 20 minutos para pagar la suya con el enlace que les mandes; si no pagan todos, la pista se libera y se devuelve el dinero. Pagando la pista entera queda confirmada al momento.')+
-    (FEE>0?' Cada pago incluye '+euro(FEE)+' de gestión.':' Pagas con tarjeta y el dinero va directo al club.')+'</p>'+
-    '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un momento…':'Reservar y pagar')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
+    (function(){var pm=payModeClub(),canClub=pm!=='online'&&!S.blocked,canOnline=pm!=='club';
+      if(!canOnline&&!canClub)return '<div class="card paystate pend"><b>No puedes reservar sin pagar por adelantado</b><span class="muted small">No te presentaste a una reserva en este club. Habla con el club para volver a reservar.</span></div>';
+      var sel=s.pay||(canOnline?'share':'club');if(sel==='club'&&!canClub)sel='share';if(sel!=='club'&&!canOnline)sel='club';s.pay=sel;
+      var o='<fieldset class="paychoice"><legend>¿Cómo pagas?</legend>';
+      if(canOnline)o+='<label class="card row"><input type="radio" name="pay" value="share" '+(sel==='share'?'checked':'')+' data-act="payMode"><span><b>Mi parte · '+euro(p+FEE)+'</b><br><span class="muted small">Cada uno paga lo suyo. La reserva se confirma cuando hayan pagado los '+ct.size+'.</span></span></label>'+
+        '<label class="card row"><input type="radio" name="pay" value="full" '+(sel==='full'?'checked':'')+' data-act="payMode"><span><b>Pista entera · '+euro(p*ct.size+FEE)+'</b><br><span class="muted small">Para cuando los demás no tienen Revo. Queda confirmada al pagar.</span></span></label>';
+      if(canClub)o+='<label class="card row"><input type="radio" name="pay" value="club" '+(sel==='club'?'checked':'')+' data-act="payMode"><span><b>En el club · '+euro(p)+' por jugador</b><br><span class="muted small">Pagáis al llegar. Tendrás que confirmar que vas el día antes.</span></span></label>';
+      else if(pm==='ambos'&&S.blocked)o+='<p class="muted small" style="margin:0">En este club ya solo puedes reservar pagando online, porque no te presentaste a una reserva.</p>';
+      o+='</fieldset><p class="muted small" style="margin:0">';
+      if(sel==='club')o+='Sin pagar por adelantado solo puedes tener una reserva a la vez. Te pediremos que confirmes que vas entre 24 y 3 horas antes: si no confirmas, la pista se libera sola.'+(s.open?' Si el partido abierto no se completa 2 horas antes, se cancela.':'')+' Si no te presentas, el club puede retirarte esta opción.';
+      else o+=(s.open
+        ?'Tienes 8 minutos para pagar tu parte. El partido queda abierto 4 horas para que se apunte gente; si en ese tiempo no se completa, se cancela y se devuelve el dinero.'
+        :'Si pagas solo tu parte, tus compañeros tienen 20 minutos para pagar la suya con el enlace que les mandes; si no pagan todos, la pista se libera y se devuelve el dinero. Pagando la pista entera queda confirmada al momento.')+
+        (FEE>0?' Cada pago incluye '+euro(FEE)+' de gestión.':' Pagas con tarjeta y el dinero va directo al club.');
+      return o+'</p><button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un momento…':sel==='club'?'Reservar':'Reservar y pagar')+'</button>';})()+
+    '<button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='match'){h=vMatch();}
   else if(s.type==='quizIntro'){
     h='<div class="quiz"><div class="qball">'+QBALL+'</div><h2>¿Qué nivel tienes?</h2><p class="muted" style="margin:8px 0 16px">Responde 7 preguntas rápidas (menos de 1 minuto) y te decimos tu nivel. Así los partidos abiertos te juntan con gente parecida.</p>'+
@@ -920,6 +937,9 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     h='<h2>Buscar jugadores</h2><form data-form="find" class="row" style="margin:12px 0"><input class="input" name="q" id="findQ" placeholder="Nombre del jugador" minlength="2" maxlength="40" autocomplete="off" value="'+esc(s.q||'')+'" required><button class="btn" type="submit">Buscar</button></form>'+
       (s.loading?'<p class="muted"><span class="spin"></span> Buscando…</p>':s.list?(s.list.length?'<div class="list">'+s.list.map(personRow).join('')+'</div>':'<p class="muted">No hay nadie con ese nombre.</p>'):'<p class="muted small">Escribe al menos 2 letras.</p>')+
       '<button class="btn btn-line btn-block" style="margin-top:12px" data-act="close">Cerrar</button>';}
+  else if(s.type==='blocks'){
+    h='<div class="row between"><h2>Jugadores bloqueados</h2><button class="btn btn-line btn-sm" data-act="close">Cerrar</button></div><p class="muted small" style="margin:6px 0 12px">No se presentaron a una reserva que se pagaba en el club. Ya no pueden reservar sin pagar por adelantado. Si fue un error o ya lo habéis hablado, perdónalos.</p>'+
+      (!(S.blocks&&S.blocks.length)?'<p class="muted">No hay nadie bloqueado.</p>':'<div class="list">'+S.blocks.map(function(x){var pr=x.profiles||{};return '<div class="pl"><span class="plname">'+avatar(pr.name,pr.avatar_url,34)+'<span>'+esc(pr.name||'Jugador')+'<br><span class="muted small">Desde el '+esc(new Intl.DateTimeFormat('es-ES',{timeZone:TZ,day:'numeric',month:'long'}).format(new Date(x.created_at)))+'</span></span></span><button class="btn btn-sm btn-line" data-act="unblock" data-v="'+x.user_id+'">Perdonar</button></div>';}).join('')+'</div>');}
   else if(s.type==='stripeKey'){var cc=S.cobros||{};
     h='<h2>Cuenta de Stripe del club</h2><p class="muted small" style="margin:6px 0 12px">Los jugadores pagan con tarjeta y el dinero llega a <b>vuestra</b> cuenta de Stripe. Revo no lo toca ni cobra comisión; solo Stripe cobra su tarifa por pago.</p>'+
     '<ol class="steps"><li>Entra en <b>dashboard.stripe.com</b> con la cuenta del club (si no tenéis, se crea gratis).</li>'+
@@ -950,6 +970,9 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     '<div class="field" style="flex:1"><label for="j-close">Cierra</label><input class="input" id="j-close" name="close" type="time" step="900" value="'+toHM(c3.close_min)+'" required></div></div>'+
     '<div class="field"><label for="j-tel">Teléfono del club (lo ven los jugadores)</label><input class="input" id="j-tel" name="tel" type="tel" inputmode="tel" maxlength="18" placeholder="Ej.: 957 00 00 00" value="'+esc(c3.contact_phone||'')+'"></div>'+
     '<div class="field"><label for="j-mail">Correo del club (opcional)</label><input class="input" id="j-mail" name="mail" type="email" maxlength="80" value="'+esc(c3.contact_email||'')+'"></div>'+
+    '<div class="field"><label for="j-pay">Cómo pagan los jugadores</label><select class="input" id="j-pay" name="pay_mode">'+
+      [['online','Solo online, con tarjeta (lo más seguro)'],['ambos','Online o en el club, elige el jugador'],['club','Solo en el club, al llegar']].map(function(o){return '<option value="'+o[0]+'"'+((c3.pay_mode||'online')===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>'+
+      '<div class="lvlhint">Con el pago online la pista queda pagada antes de jugar y no hay plantones. Si dejas pagar en el club, Revo os protege así: cada jugador solo puede tener una reserva sin pagar, tiene que confirmar que va (si no, la pista se libera 3 horas antes) y, si no se presenta, lo marcáis y ya no podrá reservar sin pagar antes.</div></div>'+
     '<p class="muted small" style="margin:0">Cada reserva dura '+(c3.slot_min/60).toString().replace('.',',')+' h, empezando a la hora de apertura.</p>'+
     '<button class="btn btn-block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Guardando…':'Guardar')+'</button><button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='fijos'){
@@ -966,15 +989,16 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
   else if(s.type==='cancel'){var lv=s.leave;
     h='<h2>'+(lv?'¿Salirte del partido?':'¿Cancelar la reserva?')+'</h2>'+
     (s.loadingPreview?'<p class="muted"><span class="spin"></span> Calculando devolución…</p>':
-     s.preview?(!lv&&s.preview.refund_cents===0&&s.preview.pct===100?'<div class="card"><b>Se devuelve todo a los jugadores</b><p class="muted small" style="margin:6px 0 0">Cuando cancela el club, cada jugador recupera todo lo que pagó.</p></div>'
+     s.preview?(s.preview.club?'<div class="card"><b>No hay nada que devolver</b><p class="muted small" style="margin:6px 0 0">Esta reserva se paga en el club y no se había cobrado nada. Gracias por avisar: la hora queda libre para otros.</p></div>'
+      :!lv&&s.preview.refund_cents===0&&s.preview.pct===100?'<div class="card"><b>Se devuelve todo a los jugadores</b><p class="muted small" style="margin:6px 0 0">Cuando cancela el club, cada jugador recupera todo lo que pagó.</p></div>'
       :'<div class="card"><div class="row between"><span>'+(lv?'Te devolvemos':'Te devolvemos a ti')+'</span><b>'+esc(s.preview.refund)+'</b></div><p class="muted small" style="margin:6px 0 0">'+refundNote(s.preview,lv)+'</p></div>'):'')+
     '<p class="muted">'+(lv?'Tu hueco quedará libre para otro jugador.':'La hora quedará libre para todos.')+'</p>'+
     '<div class="col"><button class="btn btn-danger btn-block" data-act="doCancel" data-v="'+s.id+'"'+(S.busy||s.loadingPreview?' disabled':'')+'>'+(lv?'Sí, salirme':'Sí, cancelar')+'</button><button class="btn btn-line btn-block" data-act="'+(s.back?'match':'close')+'" data-v="'+(s.back||'')+'">No</button></div>';}
   else if(s.type==='invite'){var iv=s.info,ict=court(iv.court_id),ifull=iv.players>=iv.size;
     h='<div class="row between"><h2>Te han invitado</h2><button class="btn btn-line btn-sm" data-act="close">Cerrar</button></div>'+
     '<p class="muted" style="margin:6px 0 10px;text-transform:capitalize">'+esc(ict.name)+' · '+esc(dayLong(iv.day))+' · '+hm(iv.start_min)+'–'+hm(iv.start_min+S.club.slot_min)+'</p>'+
-    '<div class="card"><b>'+esc(iv.owner_name||'Un jugador')+'</b> te invita a jugar. Hay '+iv.players+' de '+iv.size+' jugadores'+(iv.pay_mode==='full'?' y la pista ya está pagada.':', '+iv.paid+(iv.paid===1?' ya ha pagado.':' ya han pagado.'))+'</div>'+
-    (ifull?'<p class="muted center">El partido está completo.</p>':'<button class="btn btn-block" data-act="join" data-v="'+iv.id+'" data-mode="'+iv.pay_mode+'"'+(S.busy?' disabled':'')+'>'+(iv.pay_mode==='full'?'Unirme (ya está pagada)':'Unirme y pagar mi parte · '+euro(ppl(iv.start_min)+FEE))+'</button>');}
+    '<div class="card"><b>'+esc(iv.owner_name||'Un jugador')+'</b> te invita a jugar. Hay '+iv.players+' de '+iv.size+' jugadores'+(iv.pay_at_club?'. Se paga en el club al llegar.':iv.pay_mode==='full'?' y la pista ya está pagada.':', '+iv.paid+(iv.paid===1?' ya ha pagado.':' ya han pagado.'))+'</div>'+
+    (ifull?'<p class="muted center">El partido está completo.</p>':'<button class="btn btn-block" data-act="join" data-v="'+iv.id+'" data-mode="'+(iv.pay_at_club?'club':iv.pay_mode)+'"'+(S.busy?' disabled':'')+'>'+(iv.pay_at_club?'Unirme (se paga en el club)':iv.pay_mode==='full'?'Unirme (ya está pagada)':'Unirme y pagar mi parte · '+euro(ppl(iv.start_min)+FEE))+'</button>');}
   el.innerHTML='<div class="sheet-bg'+(opening?' opening':'')+'" data-act="bg"><div class="sheet" role="dialog" aria-modal="true"><span class="grab" aria-hidden="true"></span>'+h+'</div></div>';
   var chat=document.getElementById('chatBox');if(chat)chat.scrollTop=chat.scrollHeight;}
 
@@ -984,18 +1008,23 @@ function vMatch(){var b=S.match;if(!b)return '<div class="center"><span class="s
     '<p class="muted" style="margin:6px 0 10px;text-transform:capitalize">'+esc(ct.name)+' · '+esc(dayLong(b.day))+' · '+hm(b.start_min)+'–'+hm(b.start_min+S.club.slot_min)+(b.lvl_min!=null?' · nivel '+lvl(b.lvl_min)+'–'+lvl(b.lvl_max):'')+'</p>';
   var pend=b.kind==='app'&&b.payment_state==='pending',mine=myRow(b),pc=paidCount(b);
   if(b.kind==='app')h+=pend?'<div class="card paystate pend"><b>Pendiente de pago · '+pc+' de '+ct.size+' pagados</b><span class="muted small">'+limitText(b)+'</span>'+cdHtml(b,true)+'</div>'
+    :b.pay_at_club?(b.no_show?'<div class="card paystate pend"><b>No se presentaron</b><span class="muted small">El club lo ha marcado. Quien reservó ya no puede reservar sin pagar por adelantado.</span></div>'
+      :needsConfirm(b)?'<div class="card paystate pend"><b>'+(hoursTo(b)<=24?'Confirma que vas':'Reservada · falta confirmar')+'</b><span class="muted small">'+(hoursTo(b)<=24?'Confírmalo antes del '+esc(confirmLimit(b))+'. Si no, la pista se libera para otros jugadores.':'El día antes te pediremos que confirmes que vas. Te avisaremos al móvil.')+' Se paga en el club: '+euro(ppl(b.start_min))+' por jugador.</span>'+
+        (hoursTo(b)<=24?'<button class="btn btn-block" style="margin-top:10px" data-act="confirmGo" data-v="'+b.id+'"'+(S.busy?' disabled':'')+'>Sí, voy</button>':'')+'</div>'
+      :'<div class="card paystate ok"><b>Reserva '+(b.attend_confirmed_at?'confirmada':'hecha')+'</b><span class="muted small">Se paga en el club al llegar: '+euro(ppl(b.start_min))+' por jugador.'+(b.attend_confirmed_at?'':' Quien reservó tiene que confirmar la asistencia el día antes.')+(b.is_open&&!full?' Si no se completa 2 horas antes, se cancela.':'')+'</span></div>')
     :'<div class="card paystate ok"><b>Reserva confirmada</b><span class="muted small">'+(b.pay_mode==='full'?'La pista está pagada entera.':'Han pagado todos los jugadores.')+'</span></div>';
-  h+='<div class="list">';ps.forEach(function(p){var tap=p.user_id&&p.user_id!==S.user.id;h+='<div class="pl"><'+(tap?'button type="button" class="plname plbtn" data-act="player" data-v="'+p.user_id+'"':'span class="plname"')+'>'+pav(p,30)+'<span>'+esc(pname(p))+(tap&&S.following&&S.following[p.user_id]?' <span class="tag lime">Sigues</span>':'')+'</span>'+(tap?'</button>':'')+(p.user_id===b.owner_id?' <span class="tag lime">Organiza</span>':'')+'</span><span class="small '+(p.paid_at?'paid':'muted')+'">'+(b.kind!=='app'?(p.profiles?'Nivel '+lvl(p.profiles.level):''):p.paid_at?'Pagado':'Sin pagar')+'</span></div>';});
+  h+='<div class="list">';ps.forEach(function(p){var tap=p.user_id&&p.user_id!==S.user.id;h+='<div class="pl"><'+(tap?'button type="button" class="plname plbtn" data-act="player" data-v="'+p.user_id+'"':'span class="plname"')+'>'+pav(p,30)+'<span>'+esc(pname(p))+(tap&&S.following&&S.following[p.user_id]?' <span class="tag lime">Sigues</span>':'')+'</span>'+(tap?'</button>':'')+(p.user_id===b.owner_id?' <span class="tag lime">Organiza</span>':'')+'</span><span class="small '+(p.paid_at?'paid':'muted')+'">'+(b.kind!=='app'||b.pay_at_club?(p.profiles?'Nivel '+lvl(p.profiles.level):''):p.paid_at?'Pagado':'Sin pagar')+'</span></div>';});
   for(var i=ps.length;i<ct.size;i++)h+='<div class="pl empty">Hueco libre</div>';h+='</div>';
   h+='<div class="col" style="margin-top:12px">';
   if(!past){
     if(me&&mine&&!mine.paid_at&&pend)h+='<button class="btn btn-block" data-act="pay" data-k="share" data-v="'+b.id+'"'+(S.busy?' disabled':'')+'>Pagar mi parte · '+euro(ppl(b.start_min)+FEE)+'</button>';
     if(owner&&pend&&pc===0)h+='<button class="btn btn-line btn-block" data-act="pay" data-k="full" data-v="'+b.id+'"'+(S.busy?' disabled':'')+'>Pagar la pista entera · '+euro(ppl(b.start_min)*ct.size+FEE)+'</button>';
-    if(!me&&b.is_open&&!full)h+='<button class="btn btn-block" data-act="join" data-v="'+b.id+'" data-mode="'+b.pay_mode+'"'+(S.busy?' disabled':'')+'>'+(b.kind==='app'&&b.pay_mode==='split'&&pend?'Apuntarme y pagar · '+euro(ppl(b.start_min)+FEE):'Apuntarme')+'</button>';
+    if(!me&&b.is_open&&!full)h+='<button class="btn btn-block" data-act="join" data-v="'+b.id+'" data-mode="'+(b.pay_at_club?'club':b.pay_mode)+'"'+(S.busy?' disabled':'')+'>'+(b.kind==='app'&&b.pay_mode==='split'&&pend?'Apuntarme y pagar · '+euro(ppl(b.start_min)+FEE):'Apuntarme')+'</button>';
     if(!me&&full)h+='<p class="muted center">El partido está completo.</p>';
     if(me&&!owner)h+='<button class="btn btn-line btn-block" data-act="leave" data-v="'+b.id+'" data-back="'+b.id+'"'+(S.busy?' disabled':'')+'>Salirme del partido</button>';
     if(owner||S.admin)h+='<button class="btn btn-danger btn-block" data-act="askCancel" data-v="'+b.id+'" data-back="'+b.id+'">Cancelar reserva</button>';
-    if(!full&&(b.is_open||(me&&pend)))h+='<button class="btn btn-blue btn-block" data-act="share" data-v="'+b.id+'">'+(b.is_open?'Compartir por WhatsApp':'Invitar por WhatsApp')+'</button>';}
+    if(!full&&(b.is_open||(me&&(pend||b.pay_at_club))))h+='<button class="btn btn-blue btn-block" data-act="share" data-v="'+b.id+'">'+(b.is_open?'Compartir por WhatsApp':'Invitar por WhatsApp')+'</button>';}
+  if(past&&S.admin&&b.pay_at_club&&!b.no_show)h+='<button class="btn btn-danger btn-block" data-act="noShow" data-v="'+b.id+'"'+(S.busy?' disabled':'')+'>No se presentaron</button><p class="muted small center" style="margin:0">Quien reservó dejará de poder reservar sin pagar por adelantado.</p>';
   h+='</div>';
   if(me||S.admin){h+='<h3 style="margin-top:16px">Chat del partido</h3><div class="chat" id="chatBox">';
     if(!S.msgs.length)h+='<p class="muted small">Aún no hay mensajes. ¡Saluda!</p>';
@@ -1116,7 +1145,15 @@ var A={
     if(mode==='split'){await goPay(id,'share');return;}
     await openMatch(id);refresh();},
   pay:function(el){goPay(el.dataset.v,el.dataset.k);},
-  payMode:function(el){S.sheet.pay=el.value;},
+  confirmGo:async function(el){var id=el.dataset.v,r=await rpc('confirm_attendance',{p_booking:id},'¡Confirmado! Nos vemos en la pista');
+    if(r.ok){celebrate();await loadMatch(id);}renderSheet();refresh();},
+  noShow:async function(el){var id=el.dataset.v;if(S.sheet.sure!==id){S.sheet.sure=id;toast('Pulsa otra vez para confirmar que no se presentaron',true);return;}
+    var r=await rpc('club_mark_noshow',{p_booking:id},'Marcado: ese jugador ya no puede reservar sin pagar antes');
+    if(r.ok){await loadMatch(id);}renderSheet();refresh();},
+  blocks:function(){S.sheet={type:'blocks'};renderSheet();},
+  unblock:async function(el){var r=await rpc('club_unblock',{p_club:CLUB,p_user:el.dataset.v},'Perdonado: puede volver a reservar');
+    if(r.ok){S.blocks=(S.blocks||[]).filter(function(x){return x.user_id!==el.dataset.v;});}renderSheet();render();},
+  payMode:function(el){S.sheet.pay=el.value;renderSheet();},
   leave:function(el){askRefund(el.dataset.v,true,el.dataset.back||'');},
   askCancel:function(el){var b=findBooking(el.dataset.v);
     if(b&&b.kind!=='app'){stopPoll();S.sheet={type:'cancel',id:el.dataset.v,back:el.dataset.back||'',simple:true};renderSheet();return;}
@@ -1165,8 +1202,10 @@ var FORMS={
     S.busy=false;render();},
   book:async function(f){var s=S.sheet,d=new FormData(f),open=!!d.get('open'),mn=open?Number(d.get('lmin')):null,mx=open?Number(d.get('lmax')):null,kind=d.get('pay')==='full'?'full':'share';
     if(open&&mn>mx){var t=mn;mn=mx;mx=t;}
-    var r=await rpc('book_slot',{p_court:s.court,p_day:S.day,p_start:s.start,p_open:open,p_lvl_min:mn,p_lvl_max:mx},null);
+    var atClub=d.get('pay')==='club';if(!d.get('pay'))return;
+    var r=await rpc('book_slot',{p_court:s.court,p_day:S.day,p_start:s.start,p_open:open,p_lvl_min:mn,p_lvl_max:mx,p_pay_at_club:atClub},null);
     if(!r.ok){renderSheet();refresh();return;}
+    if(atClub){toast('¡Pista reservada! Se paga en el club');celebrate();await openMatch(r.data);refresh();return;}
     await goPay(r.data,kind);},
   admin:async function(f){var s=S.sheet,d=new FormData(f);
     if(d.get('repeat')){S.busy=true;renderSheet();
@@ -1178,7 +1217,7 @@ var FORMS={
     var r=await rpc('admin_block_slot',{p_court:s.court,p_day:S.panelDay,p_start:s.start,p_kind:s.kind,p_label:String(d.get('label')||'').trim()||null},s.kind==='manual'?'Reserva apuntada':'Pista bloqueada');
     if(r.ok)S.sheet=null;renderSheet();refresh();},
   ajustes:async function(f){var d=new FormData(f);
-    var body={club_id:CLUB,action:'guardar',price_morning:Number(d.get('pm')),price_afternoon:Number(d.get('pa')),cut_min:fromHM(d.get('cut')),open_min:fromHM(d.get('open')),close_min:fromHM(d.get('close')),contact_phone:String(d.get('tel')||''),contact_email:String(d.get('mail')||'')};
+    var body={club_id:CLUB,action:'guardar',price_morning:Number(d.get('pm')),price_afternoon:Number(d.get('pa')),cut_min:fromHM(d.get('cut')),open_min:fromHM(d.get('open')),close_min:fromHM(d.get('close')),contact_phone:String(d.get('tel')||''),contact_email:String(d.get('mail')||''),pay_mode:String(d.get('pay_mode')||'online')};
     S.busy=true;renderSheet();
     try{await fx('club-ajustes',body);S.club=await q(sb.from('clubs').select('*').eq('id',CLUB).single());S.busy=false;S.sheet=null;toast('Ajustes guardados');}
     catch(e){S.busy=false;toast(errMsg(e),true);}

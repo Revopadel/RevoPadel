@@ -4,8 +4,12 @@
 //  3. Plazo para completarse desde que se crea: privada 20 minutos, partido abierto 4 horas.
 //     Si vence sin que hayan pagado todos, se libera la pista y se devuelve el 100 % (gestión incluida).
 //  4. Y en cualquier caso, si 2 horas antes del partido no han pagado todos, se cancela igual.
+//  5. Reservas que se pagan en el club (no hay pago que las sujete, así que se protegen de otra forma):
+//     · quien reservó tiene que confirmar que va entre 24 h y 3 h antes; se le recuerda dos veces.
+//       Si a 3 h del partido no ha confirmado, la pista se libera para que el club pueda volver a llenarla.
+//     · un partido abierto que a 2 h de empezar sigue sin completarse también se libera.
 import {
-  admin, type ClubStripe, clubStripeOrNull, describeBooking, ensureWebhook, euro, expireOpenSessions, handle, json, materializeFixed, matchUrl, notifyUsers, paidPayments, refund, startsAt,
+  addDays, admin, type ClubStripe, clubStripeOrNull, describeBooking, madridDay, ensureWebhook, euro, expireOpenSessions, handle, json, materializeFixed, matchUrl, notifyUsers, paidPayments, refund, startsAt,
   syncPending,
 } from "./revo.ts";
 
@@ -19,7 +23,7 @@ const WHY: Record<string, string> = {
 Deno.serve((req) => handle(req, async () => {
   const sb = admin();
   const now = new Date();
-  const out = { huecos_liberados: 0, reservas_liberadas: 0, canceladas_2h: 0, devoluciones: 0 };
+  const out = { huecos_liberados: 0, reservas_liberadas: 0, canceladas_2h: 0, devoluciones: 0, club_sin_confirmar: 0, club_sin_completar: 0, recordatorios: 0 };
   // El Stripe de cada club (null si ese club no puede cobrar)
   const clients = new Map<string, ClubStripe | null>();
   const stripeOf = async (clubId: string) => {
@@ -86,6 +90,51 @@ Deno.serve((req) => handle(req, async () => {
         out.huecos_liberados++;
       }
     }
+  }
+
+  // ----- Reservas que se pagan en el club -----
+  const today = madridDay(now);
+  const { data: atClub } = await sb.from("bookings").select("*")
+    .eq("status", "active").eq("kind", "app").eq("pay_at_club", true).gte("day", today).lte("day", addDays(today, 1));
+  for (const b of atClub ?? []) {
+    try {
+      const start = await startsAt(sb, b.day, b.start_min);
+      const hrs = (start.getTime() - now.getTime()) / 3_600_000;
+      if (hrs <= 0 || hrs > 24) continue;
+      const { data: players } = await sb.from("booking_players").select("user_id").eq("booking_id", b.id);
+      const { data: court } = await sb.from("courts").select("size").eq("id", b.court_id).single();
+      const uids = (players ?? []).map((p) => p.user_id).filter(Boolean) as string[];
+      const free = async (why: string) => {
+        const { data: done } = await sb.from("bookings").update({ status: "cancelled", cancelled_at: now.toISOString() })
+          .eq("id", b.id).eq("status", "active").select("id");
+        if (!done?.length) return false;
+        const desc = await describeBooking(sb, b);
+        await notifyUsers(sb, uids, "Reserva cancelada · " + desc, "Reserva cancelada", () => [desc, why, "No se te había cobrado nada."],
+          { text: "Reservar otra hora", url: matchUrl(b.id).split("#")[0] });
+        return true;
+      };
+      if (!b.attend_confirmed_at && hrs <= 3) {
+        if (await free("No se confirmó la asistencia a tiempo, así que la pista se ha liberado para otros jugadores.")) out.club_sin_confirmar++;
+        continue;
+      }
+      if (b.is_open && (players?.length ?? 0) < (court?.size ?? 4) && hrs <= 2) {
+        if (await free("A 2 horas del partido no se había completado, así que se ha cancelado.")) out.club_sin_completar++;
+        continue;
+      }
+      if (!b.attend_confirmed_at && b.owner_id) {
+        const want = hrs <= 6 ? 2 : 1;   // un aviso al abrirse el plazo (24 h antes) y otro a 6 h
+        if ((b.attend_reminders ?? 0) < want) {
+          const { data: mark } = await sb.from("bookings").update({ attend_reminders: want }).eq("id", b.id).eq("attend_reminders", b.attend_reminders ?? 0).select("id");
+          if (mark?.length) {
+            const desc = await describeBooking(sb, b);
+            const limit = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" }).format(new Date(start.getTime() - 3 * 3_600_000));
+            await notifyUsers(sb, [b.owner_id], "Confirma tu reserva · " + desc, want === 2 ? "Último aviso: confirma que vas" : "¿Sigues viniendo? Confírmalo",
+              () => [desc, `Confirma en la app antes de las ${limit}. Si no, la pista se libera para otros jugadores.`], { text: "Confirmar", url: matchUrl(b.id) });
+            out.recordatorios++;
+          }
+        }
+      }
+    } catch (e) { console.error("pago en club", b.id, String(e).slice(0, 200)); }
   }
   return json(out);
 }));
