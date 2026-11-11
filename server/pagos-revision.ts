@@ -5,13 +5,16 @@
 //     Si vence sin que hayan pagado todos, se libera la pista y se devuelve el 100 % (gestión incluida).
 //  4. Y en cualquier caso, si 2 horas antes del partido no han pagado todos, se cancela igual.
 //  5. Reservas que se pagan en el club (no hay pago que las sujete, así que se protegen de otra forma):
-//     · quien reservó tiene que confirmar que va entre 24 h y 3 h antes; se le recuerda dos veces.
-//       Si a 3 h del partido no ha confirmado, la pista se libera para que el club pueda volver a llenarla.
-//     · un partido abierto que a 2 h de empezar sigue sin completarse también se libera.
+//     · quien reservó tiene que confirmar que va entre 24 h y 12 h antes; se le recuerda dos veces (nunca de madrugada).
+//       Si a 12 h del partido no ha confirmado, la pista se libera para que el club pueda volver a llenarla.
+//     · un partido abierto que a 5 h de empezar sigue sin completarse también se libera.
 import {
   addDays, admin, type ClubStripe, clubStripeOrNull, describeBooking, madridDay, ensureWebhook, euro, expireOpenSessions, handle, json, materializeFixed, matchUrl, notifyUsers, paidPayments, refund, startsAt,
   syncPending,
 } from "./revo.ts";
+
+const CONFIRM_BY_H = 12;   // horas antes del partido en que se libera una reserva sin confirmar (pago en el club)
+const OPEN_FULL_BY_H = 5;  // horas antes en que se libera un partido abierto sin completar (pago en el club)
 
 const WHY: Record<string, string> = {
   privada_20min: "No pagaron todos en los 20 minutos que hay para completar el pago, así que la pista se ha liberado.",
@@ -113,21 +116,23 @@ Deno.serve((req) => handle(req, async () => {
           { text: "Reservar otra hora", url: matchUrl(b.id).split("#")[0] });
         return true;
       };
-      if (!b.attend_confirmed_at && hrs <= 3) {
+      if (!b.attend_confirmed_at && hrs <= CONFIRM_BY_H) {
         if (await free("No se confirmó la asistencia a tiempo, así que la pista se ha liberado para otros jugadores.")) out.club_sin_confirmar++;
         continue;
       }
-      if (b.is_open && (players?.length ?? 0) < (court?.size ?? 4) && hrs <= 2) {
-        if (await free("A 2 horas del partido no se había completado, así que se ha cancelado.")) out.club_sin_completar++;
+      if (b.is_open && (players?.length ?? 0) < (court?.size ?? 4) && hrs <= OPEN_FULL_BY_H) {
+        if (await free(`A ${OPEN_FULL_BY_H} horas del partido no se había completado, así que se ha cancelado y la pista queda libre.`)) out.club_sin_completar++;
         continue;
       }
       if (!b.attend_confirmed_at && b.owner_id) {
-        const want = hrs <= 6 ? 2 : 1;   // un aviso al abrirse el plazo (24 h antes) y otro a 6 h
-        if ((b.attend_reminders ?? 0) < want) {
+        const want = hrs <= CONFIRM_BY_H + 4 ? 2 : 1;   // un aviso al abrirse el plazo (24 h antes) y otro 4 h antes de que se cierre
+        const hourNow = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", hourCycle: "h23" }).format(now));
+        const quiet = hourNow >= 23 || hourNow < 8;        // de madrugada no se molesta: el aviso sale a las 8
+        if (!quiet && (b.attend_reminders ?? 0) < want) {
           const { data: mark } = await sb.from("bookings").update({ attend_reminders: want }).eq("id", b.id).eq("attend_reminders", b.attend_reminders ?? 0).select("id");
           if (mark?.length) {
             const desc = await describeBooking(sb, b);
-            const limit = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" }).format(new Date(start.getTime() - 3 * 3_600_000));
+            const limit = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" }).format(new Date(start.getTime() - CONFIRM_BY_H * 3_600_000));
             await notifyUsers(sb, [b.owner_id], "Confirma tu reserva · " + desc, want === 2 ? "Último aviso: confirma que vas" : "¿Sigues viniendo? Confírmalo",
               () => [desc, `Confirma en la app antes de las ${limit}. Si no, la pista se libera para otros jugadores.`], { text: "Confirmar", url: matchUrl(b.id) });
             out.recordatorios++;
