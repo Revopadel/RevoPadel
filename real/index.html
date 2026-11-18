@@ -475,6 +475,40 @@ h1{letter-spacing:.4px}
 .pchip b{color:var(--ink);font-size:14px}
 .pchip small{font-size:11.5px;opacity:.8}
 .slots-none{grid-column:1/-1;margin:2px 0 0;text-align:center;padding:12px 0}
+
+/* carta de jugador */
+.pcard{position:relative;margin-top:12px;padding:18px 18px 20px;border-radius:26px;text-align:center;overflow:hidden;
+ background:radial-gradient(120% 70% at 50% 0%,rgba(212,240,74,.20),rgba(212,240,74,0) 60%),linear-gradient(160deg,#18212E 0%,#0C1118 70%);
+ border:1px solid rgba(212,240,74,.30);box-shadow:0 18px 40px -22px rgba(212,240,74,.45),inset 0 1px 0 rgba(255,255,255,.06);animation:pop .45s cubic-bezier(.2,.9,.3,1.1) both}
+.pcard:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.025) 0 2px,transparent 2px 9px);pointer-events:none}
+.pc-top{position:relative;display:flex;justify-content:space-between;align-items:flex-start}
+.pc-lvl{display:flex;flex-direction:column;align-items:center;line-height:1}
+.pc-lvl b{font-family:var(--font-d);font-style:italic;font-size:40px;color:var(--lime)}
+.pc-lvl span{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.pc-club{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.05)}
+.pc-photo{position:relative;display:flex;justify-content:center;margin-top:-18px}
+.pc-photo .av.big{box-shadow:0 0 0 3px var(--lime),0 0 0 8px rgba(212,240,74,.12),0 16px 30px -12px rgba(0,0,0,.9)}
+.pc-name{position:relative;display:block;margin-top:14px;font-family:var(--font-d);font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-sub{position:relative;display:block;margin-top:4px;font-size:13px;color:var(--lime);font-weight:600}
+.pc-stats{position:relative;display:grid;grid-template-columns:repeat(4,1fr);margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
+.pc-stat{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;color:inherit;font:inherit;padding:0;cursor:default}
+button.pc-stat{cursor:pointer}
+.pc-stat b{font-family:var(--font-d);font-size:24px;line-height:1}
+.pc-stat span{font-size:11px;color:var(--muted)}
+.pc-stat+.pc-stat{border-left:1px solid rgba(255,255,255,.06)}
+.pc-actions{position:relative;display:flex;justify-content:center;gap:8px;margin-top:16px}
+h3.sect{margin:22px 2px 8px;font-family:var(--font-d);font-size:18px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.badges{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.badge{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border-radius:16px;background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.08);text-align:center;opacity:.55}
+.badge .bi{display:flex;width:40px;height:40px;border-radius:50%;align-items:center;justify-content:center;background:rgba(255,255,255,.05);color:var(--muted)}
+.badge b{font-size:12px;line-height:1.15}
+.badge small{font-size:10.5px;color:var(--muted);line-height:1.2}
+.badge.on{opacity:1;border:1px solid rgba(212,240,74,.35);background:rgba(212,240,74,.06)}
+.badge.on .bi{background:var(--lime);color:var(--lime-ink);box-shadow:0 6px 16px -6px rgba(212,240,74,.7)}
+.editp summary{list-style:none;cursor:pointer;display:flex;flex-direction:column;gap:2px;position:relative;padding-right:24px}
+.editp summary::-webkit-details-marker{display:none}
+.editp summary:after{content:'';position:absolute;right:4px;top:50%;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .2s}
+.editp[open] summary:after{transform:translateY(-30%) rotate(-135deg)}
 </style>
 </head>
 <body>
@@ -631,7 +665,8 @@ async function loadTab(){
     S.next=up.map(function(x){return x.bookings;}).filter(function(b){return !isPast(b.day,b.start_min);}).sort(function(a,b){return a.day<b.day?-1:a.day>b.day?1:a.start_min-b.start_min;})[0]||null;}
   else if(S.tab==='partidos'){var rows=await q(sb.from('bookings').select(SEL).eq('club_id',CLUB).eq('status','active').eq('is_open',true).gte('day',n).order('day').order('start_min'));
     S.open=rows.filter(function(b){return !isPast(b.day,b.start_min);});}
-  else if(S.tab==='perfil'){S.fc=await followCounts(S.user.id);}
+  else if(S.tab==='perfil'){var pr=await Promise.all([followCounts(S.user.id),q(sb.from('booking_players').select('booking_id,bookings!inner(day,status)').eq('user_id',S.user.id).lt('bookings.day',n).eq('bookings.status','active')).catch(function(){return null;})]);S.fc=pr[0];
+    if(pr[1]){var mm=n.slice(0,7);S.stats={total:pr[1].length,mes:pr[1].filter(function(x){return x.bookings&&String(x.bookings.day).slice(0,7)===mm;}).length};}}
   else if(S.tab==='mias'){var rows2=await q(sb.from('bookings').select(SEL).eq('status','active').gte('day',n).order('day').order('start_min'));
     S.mine=rows2.filter(function(b){return !isPast(b.day,b.start_min)&&b.booking_players.some(function(p){return p.user_id===S.user.id;});});}
   else if(S.tab==='club'&&S.admin){sb.from('club_blocks').select('user_id,created_at,profiles(name,level,avatar_url)').eq('club_id',CLUB).order('created_at',{ascending:false}).then(function(r){S.blocks=r.data||[];if(S.tab==='club'&&S.blocks.length)render();});
@@ -764,22 +799,33 @@ function vMias(){var h='<h2 style="margin-top:4px">Mis reservas</h2>'+pushCard(t
   if(!S.mine.length)return h+emptyState('No tienes reservas próximas.<br>La pista te está esperando.','Reservar pista','reservar');
   return h+'<div class="cardgrid">'+S.mine.map(matchCard).join('')+'</div>';}
 
-function vPerfil(){var me=S.me,opts=lvlOpts(me.level,true),L=lvlInfo(me.level);
+var BADGES=[{n:1,t:'Debut',d:'Tu primer partido con Revo'},{n:10,t:'Habitual',d:'10 partidos jugados'},{n:25,t:'Fijo del club',d:'25 partidos jugados'},{n:50,t:'Leyenda',d:'50 partidos jugados'}];
+function badgeIcon(i){var p=['M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z','M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7zm0 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z','M5 4h14v4a7 7 0 0 1-14 0zM9 15h6l1 5H8z','M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1z'];
+  return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="'+p[i]+'" fill="currentColor"/></svg>';}
+function vPerfil(){var me=S.me,opts=lvlOpts(me.level,true),L=lvlInfo(me.level),st=S.stats,tot=st?st.total:null;
+  var stat=function(v,l,act,val){var inner='<b>'+(v==null?'–':v)+'</b><span>'+l+'</span>';return act?'<button type="button" class="pc-stat" data-act="'+act+'" data-v="'+val+'">'+inner+'</button>':'<div class="pc-stat">'+inner+'</div>';};
+  var badges=BADGES.map(function(b,i){var on=tot!=null&&tot>=b.n;return '<div class="badge'+(on?' on':'')+'" title="'+esc(b.d)+'"><span class="bi">'+badgeIcon(i)+'</span><b>'+esc(b.t)+'</b><small>'+(on?'Conseguida':(tot==null?b.n+' partidos':(b.n-tot)+' para lograrla'))+'</small></div>';}).join('');
   return '<h2 style="margin-top:4px">Tu perfil</h2>'+
-  '<div class="card mecard"><div class="mephoto">'+avatar(me.name,me.avatar_url,84,'big')+(S.avBusy?'<span class="avload"><span class="spin"></span></span>':'')+'</div>'+
-  '<div class="meinfo"><b class="mename">'+esc(me.name)+'</b><span class="muted small">Nivel '+lvl(me.level)+' · '+esc(L.name)+'</span>'+
-  '<div class="fcount"><button type="button" data-act="follows" data-v="followers"><b>'+(S.fc?S.fc.followers:'–')+'</b> '+(S.fc&&S.fc.followers===1?'seguidor':'seguidores')+'</button><button type="button" data-act="follows" data-v="following"><b>'+(S.fc?S.fc.following:'–')+'</b> siguiendo</button></div>'+
-  '<div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-act="pickPhoto"'+(S.avBusy?' disabled':'')+'>'+(me.avatar_url?'Cambiar foto':'Poner foto')+'</button>'+
-  (me.avatar_url?'<button type="button" class="btn btn-line btn-sm" data-act="delPhoto"'+(S.avBusy?' disabled':'')+'>Quitar</button>':'')+'</div></div>'+
-  '<input type="file" id="avatarFile" accept="image/*" hidden></div>'+
+  '<div class="pcard">'+
+    '<div class="pc-top"><div class="pc-lvl"><b>'+lvl(me.level)+'</b><span>Nivel</span></div><div class="pc-club">'+esc(S.club&&S.club.name||'Revo')+'</div></div>'+
+    '<div class="pc-photo">'+avatar(me.name,me.avatar_url,108,'big')+(S.avBusy?'<span class="avload"><span class="spin"></span></span>':'')+'</div>'+
+    '<b class="pc-name">'+esc(me.name)+'</b><span class="pc-sub">'+esc(L.name)+'</span>'+
+    '<div class="pc-stats">'+stat(tot,'Partidos')+stat(st?st.mes:null,'Este mes')+stat(S.fc?S.fc.followers:null,S.fc&&S.fc.followers===1?'Seguidor':'Seguidores','follows','followers')+stat(S.fc?S.fc.following:null,'Siguiendo','follows','following')+'</div>'+
+    '<div class="pc-actions"><button type="button" class="btn btn-sm" data-act="pickPhoto"'+(S.avBusy?' disabled':'')+'>'+(me.avatar_url?'Cambiar foto':'Poner foto')+'</button>'+
+    (me.avatar_url?'<button type="button" class="btn btn-line btn-sm" data-act="delPhoto"'+(S.avBusy?' disabled':'')+'>Quitar</button>':'')+'</div>'+
+    '<input type="file" id="avatarFile" accept="image/*" hidden></div>'+
+  '<h3 class="sect">Insignias</h3><div class="badges">'+badges+'</div>'+
   '<button type="button" class="card findcard" data-act="findPlayers"><span class="findic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span><b>Buscar jugadores</b><br><span class="muted small">Sigue a tus compañeros: verás primero sus partidos y te avisaremos al móvil cuando abran uno</span></span></button>'+
-  '<form class="card col" data-form="profile"><div class="field"><label for="p-name">Nombre</label><input class="input" id="p-name" name="name" maxlength="40" value="'+esc(me.name)+'" required></div>'+
+  '<details class="card editp"><summary><b>Editar nombre y nivel</b><span class="muted small">Cambia cómo te ven los demás</span></summary>'+
+  '<form class="col" data-form="profile" style="margin-top:12px"><div class="field"><label for="p-name">Nombre</label><input class="input" id="p-name" name="name" maxlength="40" value="'+esc(me.name)+'" required></div>'+
   '<div class="field"><label for="p-level">Nivel</label><select class="input" id="p-level" name="level">'+opts+'</select>'+
   '<div class="lvlhint" id="p-hint" aria-live="polite">'+lvlHint(me.level)+'</div><div class="row" style="gap:16px;flex-wrap:wrap"><button type="button" class="linkbtn" data-act="quizGo">Hacer el test de nivel</button><button type="button" class="linkbtn" data-act="levels">Ver la guía</button></div></div>'+
-  '<button class="btn" type="submit">Guardar</button></form>'+
+  '<button class="btn" type="submit">Guardar</button></form></details>'+
+  '<h3 class="sect">Ajustes y ayuda</h3>'+
+  pushCard(false)+
   '<div class="card"><div class="muted small">Has entrado como</div><b>'+esc(S.user.email)+'</b>'+(S.admin?'<div style="margin-top:6px"><span class="tag lime">Administrador del Olimpo</span></div>':'')+'</div>'+
-  (S.admin?'':'<form class="card col" data-form="claim"><div><b>¿Gestionas un club?</b><p class="muted small" style="margin:4px 0 0">Introduce el código que te hemos dado para activar el panel de tu club.</p></div><div class="field"><label for="c-code">Código del club</label><input class="input" id="c-code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej.: OLIMPO-XXXXXX" required minlength="4" maxlength="40"></div><button class="btn btn-line" type="submit"'+(S.busy?' disabled':'')+'>Activar panel del club</button></form>')+
-  pushCard(false)+contactCard()+
+  contactCard()+
+  (S.admin?'':'<details class="card editp"><summary><b>¿Gestionas un club?</b><span class="muted small">Activa el panel de tu club con su código</span></summary><form class="col" data-form="claim" style="margin-top:12px"><div class="field"><label for="c-code">Código del club</label><input class="input" id="c-code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej.: OLIMPO-XXXXXX" required minlength="4" maxlength="40"></div><button class="btn btn-line" type="submit"'+(S.busy?' disabled':'')+'>Activar panel del club</button></form></details>')+
   '<button class="btn btn-line btn-block" data-act="logout">Cerrar sesión</button>'+legalLinks()+
   '<p class="muted small center" style="margin-top:18px">Versión de prueba: los pagos son de mentira. Para pagar usa la tarjeta 4242 4242 4242 4242, cualquier fecha futura y cualquier CVC.</p>';}
 
