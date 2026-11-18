@@ -969,20 +969,20 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     '<button class="btn btn-line btn-block" type="button" data-act="close">Cancelar</button></form>';}
   else if(s.type==='match'){h=vMatch();}
   else if(s.type==='quizIntro'){
-    h='<div class="quiz"><div class="qball">'+QBALL+'</div><h2>¿Qué nivel tienes?</h2><p class="muted" style="margin:8px 0 16px">Responde 7 preguntas rápidas (menos de 1 minuto) y te decimos tu nivel. Así los partidos abiertos te juntan con gente parecida.</p>'+
+    h='<div class="quiz"><div class="qball">'+QBALL+'</div><h2>'+(s.must?'¡Bienvenido a Revo!':'¿Qué nivel tienes?')+'</h2><p class="muted" style="margin:8px 0 16px">Responde 7 preguntas rápidas (menos de 1 minuto) y te decimos tu nivel. Así los partidos abiertos te juntan con gente parecida.</p>'+
     '<button class="btn btn-block" data-act="quizGo">Empezar el test</button>'+
-    '<div class="row" style="margin-top:10px;gap:10px"><button class="btn btn-line" style="flex:1" data-act="quizManual">Lo elijo yo</button><button class="btn btn-line" style="flex:1" data-act="quizLater">Ahora no</button></div></div>';}
+    (s.must?'<button class="btn btn-line btn-block" style="margin-top:10px" data-act="quizManual">Ya sé mi nivel</button><p class="muted small" style="margin-top:12px">Lo puedes cambiar cuando quieras desde tu perfil.</p></div>':'<div class="row" style="margin-top:10px;gap:10px"><button class="btn btn-line" style="flex:1" data-act="quizManual">Lo elijo yo</button><button class="btn btn-line" style="flex:1" data-act="quizLater">Ahora no</button></div></div>');}
   else if(s.type==='quiz'){var Q=QUIZ[s.i],n=QUIZ.length;
     h='<div class="quiz"><div class="row between small muted"><span>Pregunta '+(s.i+1)+' de '+n+'</span>'+(s.i>0?'<button type="button" class="linkbtn" style="padding:0" data-act="quizBack">← Atrás</button>':'<span></span>')+'</div>'+
     '<div class="qbar"><i style="width:'+Math.round(s.i/n*100)+'%"></i></div><h2 class="qq">'+esc(Q.q)+'</h2><div class="list">'+
     Q.o.map(function(o,k){return '<button type="button" class="card qopt'+(s.a[s.i]===k?' on':'')+'" data-act="quizAns" data-v="'+k+'">'+esc(o[0])+'</button>';}).join('')+'</div></div>';}
   else if(s.type==='quizRes'){var L2=lvlInfo(s.lv);
-    h='<div class="quiz center"><span class="muted small">Tu nivel aproximado</span><div class="qres">'+lvl(s.lv)+'</div><h2>'+esc(L2.name)+'</h2><p class="muted small" style="margin:4px 0 0">'+lvlCat(L2)+'</p>'+
+    h='<div class="quiz center"><span class="muted small">'+(s.manual?'Elige tu nivel con − y +':'Tu nivel aproximado')+'</span><div class="qres">'+lvl(s.lv)+'</div><h2>'+esc(L2.name)+'</h2><p class="muted small" style="margin:4px 0 0">'+lvlCat(L2)+'</p>'+
     '<p style="margin:12px 0 16px">'+esc(L2.d)+'</p>'+
-    '<div class="row qadj"><button class="btn btn-line" data-act="quizAdj" data-v="-0.5"'+(s.lv<=1?' disabled':'')+' aria-label="Bajar medio punto">− 0,5</button><span class="muted small">¿No te ves? Ajústalo</span><button class="btn btn-line" data-act="quizAdj" data-v="0.5"'+(s.lv>=7?' disabled':'')+' aria-label="Subir medio punto">+ 0,5</button></div>'+
+    '<div class="row qadj"><button class="btn btn-line" data-act="quizAdj" data-v="-0.5"'+(s.lv<=1?' disabled':'')+' aria-label="Bajar medio punto">− 0,5</button><span class="muted small">'+(s.manual?'De 1 a 7':'¿No te ves? Ajústalo')+'</span><button class="btn btn-line" data-act="quizAdj" data-v="0.5"'+(s.lv>=7?' disabled':'')+' aria-label="Subir medio punto">+ 0,5</button></div>'+
     '<button class="btn btn-block" style="margin-top:14px" data-act="quizSave"'+(S.busy?' disabled':'')+'>'+(S.busy?'Guardando…':'Guardar nivel '+lvl(s.lv))+'</button>'+
-    '<button class="btn btn-line btn-block" style="margin-top:8px" data-act="quizGo">Repetir el test</button>'+
-    '<p class="muted small" style="margin-top:12px">Es una estimación: si juegas con gente que te gana o pierde siempre, cámbialo en Perfil.</p></div>';}
+    '<button class="btn btn-line btn-block" style="margin-top:8px" data-act="quizGo">'+(s.manual?'Mejor hago el test':'Repetir el test')+'</button>'+
+    '<p class="muted small" style="margin-top:12px">'+(s.manual?'Lo puedes cambiar cuando quieras desde tu perfil.':'Es una estimación: si juegas con gente que te gana o pierde siempre, cámbialo en Perfil.')+'</p></div>';}
   else if(s.type==='player'){var pr=s.p;
     if(!pr)h='<p class="muted"><span class="spin"></span> Cargando…</p>';
     else{var fol=S.following&&S.following[pr.id],PL=lvlInfo(pr.level);
@@ -1062,7 +1062,7 @@ function renderSheet(){var el=document.getElementById('sheet'),s=S.sheet;if(!s){
     '<p class="muted" style="margin:6px 0 10px;text-transform:capitalize">'+esc(ict.name)+' · '+esc(dayLong(iv.day))+' · '+hm(iv.start_min)+'–'+hm(iv.start_min+S.club.slot_min)+'</p>'+
     '<div class="card"><b>'+esc(iv.owner_name||'Un jugador')+'</b> te invita a jugar. Hay '+iv.players+' de '+iv.size+' jugadores'+(iv.pay_at_club?'. Se paga en el club al llegar.':iv.pay_mode==='full'?' y la pista ya está pagada.':', '+iv.paid+(iv.paid===1?' ya ha pagado.':' ya han pagado.'))+'</div>'+
     (ifull?'<p class="muted center">El partido está completo.</p>':'<button class="btn btn-block" data-act="join" data-v="'+iv.id+'" data-mode="'+(iv.pay_at_club?'club':iv.pay_mode)+'"'+(S.busy?' disabled':'')+'>'+(iv.pay_at_club?'Unirme (se paga en el club)':iv.pay_mode==='full'?'Unirme (ya está pagada)':'Unirme y pagar mi parte · '+euro(ppl(iv.start_min)+FEE))+'</button>');}
-  el.innerHTML='<div class="sheet-bg'+(opening?' opening':'')+'" data-act="bg"><div class="sheet" role="dialog" aria-modal="true"><span class="grab" aria-hidden="true"></span>'+h+'</div></div>';
+  el.innerHTML='<div class="sheet-bg'+(opening?' opening':'')+'" data-act="bg"><div class="sheet" role="dialog" aria-modal="true">'+(s.must?'':'<span class="grab" aria-hidden="true"></span>')+h+'</div></div>';
   var chat=document.getElementById('chatBox');if(chat)chat.scrollTop=chat.scrollHeight;}
 
 function vMatch(){var b=S.match;if(!b)return '<div class="center"><span class="spin"></span></div>';
@@ -1155,7 +1155,7 @@ var A={
   book:function(el){S.busy=false;S.sheet={type:'book',court:el.dataset.court,start:+el.dataset.v,open:false};renderSheet();},
   toggleOpen:function(el){S.sheet.open=el.checked;renderSheet();},
   match:function(el){if(el.dataset.v)openMatch(el.dataset.v);else{S.sheet=null;renderSheet();}},
-  close:function(){S.sheet=null;stopPoll();renderSheet();},
+  close:function(){if(S.sheet&&S.sheet.must)return;S.sheet=null;stopPoll();renderSheet();},
   clubs:function(){S.sheet={type:'clubs'};renderSheet();},
   levels:function(){var prev=S.sheet;if(prev&&prev.type==='book'){var a=document.getElementById('b-min'),b=document.getElementById('b-max');if(a&&b){prev.lmin=a.value;prev.lmax=b.value;}}
     S.sheet={type:'levels',back:prev&&prev.type==='book'?'book':'',prev:prev};renderSheet();},
@@ -1186,22 +1186,22 @@ var A={
   delPhoto:async function(){var old=S.me.avatar_url;S.avBusy=true;render();
     var r=await sb.from('profiles').update({avatar_url:null}).eq('id',S.user.id).select().single();S.avBusy=false;
     if(r.error){toast(errMsg(r.error),true);render();return;}S.me=r.data;removeAvatarFile(old);toast('Foto quitada');render();},
-  quizGo:function(){S.busy=false;S.sheet={type:'quiz',i:0,a:[]};renderSheet();},
+  quizGo:function(){S.busy=false;S.sheet={type:'quiz',i:0,a:[],must:!!(S.sheet&&S.sheet.must)};renderSheet();},
   quizBack:function(){if(S.sheet.i>0){S.sheet.i--;renderSheet();}},
   quizAns:function(el){var s=S.sheet,k=+el.dataset.v;s.a[s.i]=k;buzz();el.classList.add('on');
-    setTimeout(function(){if(S.sheet!==s)return;if(s.i<QUIZ.length-1){s.i++;renderSheet();}else{S.sheet={type:'quizRes',lv:quizLevel(s.a),a:s.a};renderSheet();}},220);},
+    setTimeout(function(){if(S.sheet!==s)return;if(s.i<QUIZ.length-1){s.i++;renderSheet();}else{S.sheet={type:'quizRes',lv:quizLevel(s.a),a:s.a,must:s.must};renderSheet();}},220);},
   quizAdj:function(el){var s=S.sheet;s.lv=Math.min(7,Math.max(1,s.lv+Number(el.dataset.v)));renderSheet();},
   quizSave:async function(){var s=S.sheet,lv=s.lv;S.busy=true;renderSheet();
     var r=await sb.from('profiles').update({level:lv}).eq('id',S.user.id).select().single();S.busy=false;
     if(r.error){renderSheet();toast(errMsg(r.error),true);return;}
     S.me=r.data;markLevelSet();S.sheet=null;renderSheet();render();toast('Nivel '+lvl(lv)+' guardado: '+lvlInfo(lv).name.toLowerCase());celebrate();},
-  quizManual:function(){markLevelSet();S.sheet=null;renderSheet();S.enter=true;S.tab='perfil';render();refresh();setTimeout(function(){var e=document.getElementById('p-level');if(e)e.focus();},400);},
+  quizManual:function(){if(S.sheet&&S.sheet.must){var cur=Number(S.me&&S.me.level);S.sheet={type:'quizRes',lv:cur>=1?Math.round(cur*2)/2:3,manual:true,must:true};renderSheet();return;}markLevelSet();S.sheet=null;renderSheet();S.enter=true;S.tab='perfil';render();refresh();setTimeout(function(){var e=document.getElementById('p-level');if(e)e.focus();},400);},
   quizLater:function(){markLevelSet();S.sheet=null;renderSheet();},
   pickLevel:function(el){var v=el.dataset.v,prev=S.sheet.prev;
     if(prev&&prev.type==='book'){S.sheet=prev;renderSheet();return;}
     var sel=document.getElementById('p-level');S.sheet=null;renderSheet();
     if(sel){sel.value=v;var hn=document.getElementById('p-hint');if(hn)hn.innerHTML=lvlHint(v);toast('Nivel '+lvl(v)+' elegido. Pulsa Guardar para quedártelo');}},
-  bg:function(el,ev){if(ev.target===el){S.sheet=null;stopPoll();renderSheet();}},
+  bg:function(el,ev){if(ev.target===el&&!(S.sheet&&S.sheet.must)){S.sheet=null;stopPoll();renderSheet();}},
   join:async function(el){var id=el.dataset.v,mode=el.dataset.mode;
     var r=await rpc('join_booking',{p_booking:id},mode==='split'?null:'¡Te has apuntado!');
     if(!r.ok){renderSheet();return;}
@@ -1357,7 +1357,7 @@ function afterRender(anim){
   if(anim)S.picked=false;}
 // Deslizar hacia abajo para cerrar la ventana (móvil)
 (function(){var st=null;
-  document.addEventListener('touchstart',function(ev){var sh=ev.target.closest('.sheet');if(!sh||window.innerWidth>=900||ev.target.closest('input,select,textarea'))return;
+  document.addEventListener('touchstart',function(ev){var sh=ev.target.closest('.sheet');if(!sh||(S.sheet&&S.sheet.must)||window.innerWidth>=900||ev.target.closest('input,select,textarea'))return;
     if(sh.scrollTop>0)return;st={sh:sh,y:ev.touches[0].clientY,dy:0};sh.style.transition='none';},{passive:true});
   document.addEventListener('touchmove',function(ev){if(!st)return;st.dy=Math.max(0,ev.touches[0].clientY-st.y);
     if(st.sh.scrollTop>0){st.dy=0;}st.sh.style.transform=st.dy?'translateY('+st.dy+'px)':'';},{passive:true});
@@ -1371,7 +1371,7 @@ var QBALL='<svg viewBox="0 0 24 24" width="56" height="56" aria-hidden="true"><c
 function markLevelSet(){try{sb.auth.updateUser({data:{level_set:true}}).catch(function(){});}catch(e){}
   if(S.user){S.user.user_metadata=Object.assign({},S.user.user_metadata,{level_set:true});}}
 function maybeLevelQuiz(){if(!S.user||!S.me||S.sheet||S.loading)return;var md=S.user.user_metadata||{};if(md.level_set)return;
-  S.sheet={type:'quizIntro'};renderSheet();}
+  S.sheet={type:'quizIntro',must:true};renderSheet();}
 
 /* ===== Arranque ===== */
 var curUid;
