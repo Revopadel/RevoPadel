@@ -54,7 +54,13 @@ Deno.serve((req) => handle(req, async () => {
     const { data: players } = await sb.from("booking_players").select("*").eq("booking_id", b.id);
     const owner = (players ?? []).find((p) => p.user_id === b.owner_id);
     const ownerExpired = owner && !owner.paid_at && b.hold_until && new Date(b.hold_until) < now;
-    const late = start.getTime() - now.getTime() <= 2 * 3_600_000;
+    // Si alguien está pagando ahora mismo (dentro de sus minutos de pago), no se cancela todavía.
+    const payingNow = (players ?? []).some((p) => !p.paid_at && p.hold_until && new Date(p.hold_until) > now) ||
+      (!!b.hold_until && new Date(b.hold_until) > now && owner && !owner.paid_at);
+    // Las reservas hechas con menos de 2 horas de margen no tienen la regla de las 2 horas:
+    // quien reserva paga la pista entera y, si no paga en sus minutos, se libera (ownerExpired).
+    const createdLate = start.getTime() - new Date(b.created_at).getTime() <= 2 * 3_600_000;
+    const late = !createdLate && !payingNow && start.getTime() - now.getTime() <= 2 * 3_600_000;
     const deadlineExpired = !!b.pay_deadline && new Date(b.pay_deadline) < now;
 
     if (ownerExpired || late || deadlineExpired) {
