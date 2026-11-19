@@ -609,6 +609,8 @@ button.cv-spot{cursor:pointer}
 .cv-spot.free b{color:var(--lime)}
 .btn-wa{display:flex;align-items:center;justify-content:center;gap:8px;color:#5FD38A;border-color:rgba(95,211,138,.35)}
 @media (prefers-reduced-motion:reduce){.auth-ball,.splash-bar i,.splash-logo{animation:none}}
+
+.btn.btn-story{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;background:linear-gradient(135deg,#F9CE34,#EE2A7B 55%,#6228D7)!important;color:#fff!important;border:0;box-shadow:0 8px 20px -10px rgba(238,42,123,.8)}
 </style>
 </head>
 <body>
@@ -755,6 +757,49 @@ async function fx(name,body){var r=await sb.functions.invoke(name,{body:body});
   if(r.error){var msg=r.error.message||'Algo ha fallado';try{var j=await r.error.context.json();if(j&&j.error)msg=j.error;}catch(e){}throw new Error(msg);}
   return r.data;}
 function paidCount(b){return b.booking_players.filter(function(p){return !!p.paid_at;}).length;}
+
+/* ===== Imagen para compartir en historias ===== */
+async function storyImage(b,R){
+  try{await Promise.all([document.fonts.load('italic 800 100px "Barlow Condensed"'),document.fonts.load('700 40px "Barlow Condensed"'),document.fonts.load('600 40px "Barlow"')]);}catch(e){}
+  var W=1080,H=1920,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
+  var me=S.user.id,mine=R.team_a.indexOf(me)>=0||R.team_b.indexOf(me)>=0,won=mine&&iWon(R),ps=b.booking_players,ct=court(b.court_id);
+  var nm=function(ids){var a=ids.map(function(id){var p=ps.filter(function(q2){return q2.user_id===id;})[0];return p?String(pname(p)).split(' ')[0]:'';}).filter(Boolean);return a.length?a.join(' y '):'Invitados';};
+  var myT=mine?(R.team_a.indexOf(me)>=0?R.team_a:R.team_b):(R.winner==='a'?R.team_a:R.team_b),rvT=myT===R.team_a?R.team_b:R.team_a;
+  // fondo
+  x.fillStyle='#050506';x.fillRect(0,0,W,H);
+  var g=x.createRadialGradient(W*.85,H*.18,0,W*.85,H*.18,900);g.addColorStop(0,won?'rgba(212,240,74,.30)':'rgba(255,255,255,.10)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  var g2=x.createRadialGradient(W*.1,H*.95,0,W*.1,H*.95,800);g2.addColorStop(0,'rgba(212,240,74,.10)');g2.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g2;x.fillRect(0,0,W,H);
+  // pista en perspectiva
+  x.save();x.translate(W*.62,H*.70);x.transform(1,0,-.55,.5,0,0);x.rotate(-.12);
+  var cw=640,ch=1000;var cg=x.createLinearGradient(0,-ch/2,0,ch/2);cg.addColorStop(0,'#1B3F96');cg.addColorStop(1,'#0E2560');x.fillStyle=cg;x.fillRect(-cw/2,-ch/2,cw,ch);
+  x.strokeStyle='rgba(238,242,247,.85)';x.lineWidth=7;x.strokeRect(-cw/2+30,-ch/2+30,cw-60,ch-60);
+  x.beginPath();x.moveTo(-cw/2+30,-ch*.22);x.lineTo(cw/2-30,-ch*.22);x.moveTo(-cw/2+30,ch*.22);x.lineTo(cw/2-30,ch*.22);x.moveTo(0,-ch*.22);x.lineTo(0,ch*.22);x.stroke();
+  x.setLineDash([10,10]);x.lineWidth=12;x.beginPath();x.moveTo(-cw/2,0);x.lineTo(cw/2,0);x.stroke();x.setLineDash([]);x.restore();
+  // logo
+  var logo=function(lx,ly,sc){x.save();x.translate(lx,ly);x.scale(sc,sc);x.fillStyle='#EEF2F7';x.font='italic 800 164px "Barlow Condensed", "Arial Narrow", sans-serif';x.textBaseline='alphabetic';
+    var tw=x.measureText('REV').width;x.save();x.scale(236/tw,1);x.fillText('REV',0,142);x.restore();
+    x.fillStyle='#D4F04A';x.beginPath();x.arc(320,85,66,0,7);x.fill();x.strokeStyle='#0A0F05';x.lineWidth=9;x.lineCap='round';x.beginPath();x.moveTo(278,35);x.bezierCurveTo(302,62,302,108,278,135);x.moveTo(362,35);x.bezierCurveTo(338,62,338,108,362,135);x.stroke();x.restore();};
+  logo(90,120,.62);
+  // textos
+  x.textBaseline='alphabetic';x.fillStyle='rgba(238,242,247,.6)';x.font='600 38px "Barlow", sans-serif';
+  var when=new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long'}).format(new Date(b.day+'T12:00:00'));
+  x.fillText((S.club&&S.club.name||'Revo')+' · '+ct.name,90,440);x.fillText(when.charAt(0).toUpperCase()+when.slice(1),90,492);
+  x.fillStyle=won?'#D4F04A':'#EEF2F7';x.font='italic 800 230px "Barlow Condensed", "Arial Narrow", sans-serif';
+  x.fillText(mine?(won?'VICTORIA':'BATALLA'):'RESULTADO',80,720);
+  if(R.score){x.fillStyle='#EEF2F7';x.font='800 150px "Barlow Condensed", "Arial Narrow", sans-serif';x.fillText(R.score,90,890);}
+  var y0=R.score?1010:860;x.font='700 66px "Barlow Condensed", "Arial Narrow", sans-serif';x.fillStyle='#EEF2F7';
+  x.fillText(nm(myT).toUpperCase(),90,y0);x.fillStyle='rgba(238,242,247,.5)';x.font='600 40px "Barlow", sans-serif';x.fillText(mine?(won?'ganaron a':'cayeron ante'):'ganaron a',90,y0+62);
+  x.fillStyle='#EEF2F7';x.font='700 66px "Barlow Condensed", "Arial Narrow", sans-serif';x.fillText(nm(rvT).toUpperCase(),90,y0+140);
+  // pie
+  x.fillStyle='#D4F04A';x.beginPath();if(x.roundRect)x.roundRect(90,H-250,560,96,48);else x.rect(90,H-250,560,96);x.fill();
+  x.fillStyle='#0A0F05';x.font='700 40px "Barlow", sans-serif';x.fillText('Reserva tu pista con Revo',128,H-188);
+  x.fillStyle='rgba(238,242,247,.55)';x.font='600 34px "Barlow", sans-serif';x.fillText('revopadel.github.io/RevoPadel',90,H-100);
+  return await new Promise(function(res){c.toBlob(res,'image/png');});}
+async function shareStory(){var b=S.match,R=S.result;if(!b||!R)return;S.busy=true;renderSheet();
+  try{var blob=await storyImage(b,R);var f=new File([blob],'revo-partido.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],text:'Partido en '+(S.club&&S.club.name||'Revo')+' 🎾'});}catch(e){}}
+    else{var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='revo-partido.png';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},4000);toast('Imagen guardada: súbela a tus historias');}}
+  catch(e){toast('No se ha podido crear la imagen',true);}finally{S.busy=false;renderSheet();}}
 function courtViz(b,ct,ps){var n=ct.size,half=Math.max(1,n/2),showPay=b.kind==='app'&&!b.pay_at_club;
   var spot=function(p){if(!p)return '<div class="cv-spot free"><span class="cv-av">+</span><b>Libre</b><small>'+(b.is_open?'Apúntate':'Hueco')+'</small></div>';
     var tap=p.user_id&&p.user_id!==S.user.id,isMe=p.user_id===S.user.id,org=p.user_id===b.owner_id;
@@ -1252,6 +1297,7 @@ function vMatch(){var b=S.match;if(!b)return '<div class="center"><span class="s
       var mine2=me&&(R.team_a.indexOf(S.user.id)>=0||R.team_b.indexOf(S.user.id)>=0),won=mine2&&iWon(R),wn=R.winner==='a'?R.team_a:R.team_b,ls=R.winner==='a'?R.team_b:R.team_a;
       h+='<div class="card resbox'+(mine2?(won?' win':' lose'):'')+'"><span class="muted small">Resultado</span><b class="resh">'+(mine2?(won?'¡Ganasteis!':'Perdisteis'):'Ganaron '+esc(nm(wn)))+'</b>'+(R.score?'<span class="resscore">'+esc(R.score)+'</span>':'')+
         '<span class="muted small">'+esc(nm(wn))+' ganaron a '+esc(nm(ls))+'</span>'+
+        '<button class="btn btn-sm btn-story" style="margin-top:12px" data-act="shareStory"'+(S.busy?' disabled':'')+'><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>'+(S.busy?'Creando imagen…':'Compartir en historias')+'</button>'+
         (R.reported_by===S.user.id&&(Date.now()-new Date(R.created_at))<864e5?'<button class="btn btn-line btn-sm" style="margin-top:10px;align-self:flex-start" data-act="resultGo" data-v="'+b.id+'">Corregir</button>':'')+'</div>';}
     else if(canReport(b))h+='<div class="card resbox ask"><b>¿Cómo quedó?</b><span class="muted small">Apunta el resultado: suma victorias y desbloquea insignias.</span><button class="btn btn-block" style="margin-top:10px" data-act="resultGo" data-v="'+b.id+'">Apuntar resultado</button></div>';}
   h+='<div class="col" style="margin-top:12px">';
@@ -1386,6 +1432,7 @@ var A={
     await openMatch(id);refresh();},
   pay:function(el){goPay(el.dataset.v,el.dataset.k);},
   goRank:function(){S.pview='ranking';var b=document.querySelector('[data-act=tab][data-v=partidos]');if(b)b.click();else{S.tab='partidos';render();}},
+  shareStory:function(){shareStory();},
   pview:function(el){S.pview=el.dataset.v;buzz();render();if(S.pview==='ranking')loadRanking().then(render);},
   rkPeriod:function(el){S.rkPeriod=el.dataset.v;buzz();render();loadRanking().then(render);},
   resultGo:function(el){var R=S.result,b=S.match,others=b.booking_players.filter(function(p){return p.user_id!==S.user.id;}),pi=null,won=null,sc='';
