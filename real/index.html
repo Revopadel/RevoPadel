@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#080C12">
+<meta name="theme-color" content="#050506">
 <meta name="robots" content="noindex">
 <link rel="icon" href="../icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
@@ -17,8 +17,8 @@
 <style>
 /* Versión conectada a Supabase. Mismo aspecto "Pista nocturna" que la demo. */
 :root{
-  --bg:#080C12;--surface:#111823;--surface2:#1A2331;--ink:#EEF2F7;--muted:#97A3B6;--line:#243042;
-  --accent:#5B8CFF;--lime:#D4F04A;--lime-ink:#0A0F05;--hero:#0D1A30;--bad:#FF7A7A;--ok:#4ADE80;--warn:#FCD34D;
+  --bg:#050506;--surface:#111214;--surface2:#191B1E;--ink:#EEF2F7;--muted:#9A9FA8;--line:#26292E;
+  --accent:#5B8CFF;--lime:#D4F04A;--lime-ink:#0A0F05;--hero:#0E0F11;--bad:#FF7A7A;--ok:#4ADE80;--warn:#FCD34D;
   --font-d:'Barlow Condensed','Arial Narrow',sans-serif;--font-b:'Barlow','Segoe UI',system-ui,sans-serif;
   color-scheme:dark;
 }
@@ -321,11 +321,10 @@ h3{font-size:18px}
 @keyframes sp{to{transform:rotate(360deg)}}
 
 /* ===== Aspecto moderno: cristal, luz ambiental y formas más suaves ===== */
-:root{--glass:rgba(17,24,35,.72);--glass-line:rgba(255,255,255,.07);--hi:rgba(255,255,255,.05);--r:20px}
+:root{--glass:rgba(16,17,19,.74);--glass-line:rgba(255,255,255,.07);--hi:rgba(255,255,255,.05);--r:20px}
 body{background:
-  radial-gradient(900px 520px at 12% -8%,rgba(212,240,74,.07),transparent 60%),
-  radial-gradient(800px 600px at 105% 10%,rgba(91,140,255,.10),transparent 60%),
-  radial-gradient(700px 500px at 50% 115%,rgba(34,81,214,.10),transparent 60%),
+  radial-gradient(900px 520px at 12% -8%,rgba(212,240,74,.06),transparent 60%),
+  radial-gradient(700px 500px at 50% 115%,rgba(212,240,74,.035),transparent 60%),
   var(--bg);background-attachment:fixed}
 /* Cabecera fija con cristal */
 .top{position:sticky;top:0;z-index:12;margin:0 -16px;padding-left:16px;padding-right:16px;
@@ -542,6 +541,18 @@ h3.sect{margin:22px 2px 8px;font-family:var(--font-d);font-size:18px;text-transf
 .rkrow b{font-family:var(--font-d);font-size:18px}
 .rkrow.me{border-color:rgba(212,240,74,.4);background:rgba(212,240,74,.07)}
 .pc-club.rank{border:1px solid rgba(212,240,74,.35);color:var(--lime);background:rgba(212,240,74,.08);font:inherit;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer}
+
+/* tema negro (nov-2026) */
+.hero{border-color:rgba(255,255,255,.08)!important;background:radial-gradient(420px 220px at 100% 0%,rgba(212,240,74,.10),transparent 70%),radial-gradient(300px 200px at 0% 100%,rgba(255,255,255,.04),transparent 70%),var(--hero)!important;box-shadow:inset 0 1px 0 var(--hi),0 20px 40px -24px rgba(0,0,0,.9)!important}
+.home-next{border-color:rgba(212,240,74,.22)!important;background:radial-gradient(300px 160px at 100% 0%,rgba(212,240,74,.12),transparent 70%),linear-gradient(160deg,#16181B,#0D0E10)!important}
+.tabs{background:#0B0C0E}
+html body .tabs button.on{background:#1A1C1F}
+.board thead th{background:#0E0F11}
+.msg.me{background:#24282E}
+.pcard{background:radial-gradient(120% 70% at 50% 0%,rgba(212,240,74,.20),rgba(212,240,74,0) 60%),linear-gradient(160deg,#1A1C1F 0%,#0A0B0C 70%)!important}
+.tag{background:#1C1F24}
+.cdtag{background:#1C1F24}
+.fixtag{background:#1C1F24}
 </style>
 </head>
 <body>
