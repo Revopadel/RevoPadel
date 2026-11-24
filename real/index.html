@@ -611,6 +611,10 @@ button.cv-spot{cursor:pointer}
 @media (prefers-reduced-motion:reduce){.auth-ball,.splash-bar i,.splash-logo{animation:none}}
 
 .btn.btn-story{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;background:linear-gradient(135deg,#F9CE34,#EE2A7B 55%,#6228D7)!important;color:#fff!important;border:0;box-shadow:0 8px 20px -10px rgba(238,42,123,.8)}
+
+.slot.taken[data-act]{cursor:pointer}
+.slot.taken.watched{border:1px dashed rgba(212,240,74,.55);background:rgba(212,240,74,.06)}
+.slot.taken.watched small{color:var(--lime);display:flex;align-items:center;justify-content:center;gap:3px}
 </style>
 </head>
 <body>
@@ -817,6 +821,7 @@ async function loadTab(){
   var n=nowM().day;
   var tab0=S.tab;
   if(S.tab==='reservar'){var day0=S.day,occ0=await q(sb.rpc('occupied_slots_v2',{p_club:CLUB,p_from:day0,p_to:day0}));
+    try{var ws=(await sb.from('slot_watches').select('court_id,start_min').eq('day',day0)).data||[];S.watch={};ws.forEach(function(w){S.watch[w.court_id+'|'+w.start_min]=1;});}catch(e){S.watch={};}
     var up=await myUpcoming(n);if(S.day!==day0)return;S.occ=occ0;
     S.mineIds=up.filter(function(x){return x.bookings.day===day0;}).map(function(x){return x.booking_id;});
     S.next=up.map(function(x){return x.bookings;}).filter(function(b){return !isPast(b.day,b.start_min);}).sort(function(a,b){return a.day<b.day?-1:a.day>b.day?1:a.start_min-b.start_min;})[0]||null;}
@@ -931,7 +936,7 @@ function homeCard(){var me=S.me,nx=S.next,first=esc(String(me.name||'').split(' 
   return h+'</div>';}
 
 function vReservar(){
-  var c=S.club,h=homeCard()+'<button class="clubbtn" data-act="clubs" aria-label="Ver clubes"><h2>'+esc(c.name)+' · '+esc(c.city)+'</h2><span class="clubchg">Cambiar</span></button><div class="pchips"><span class="pchip">Mañana <b>'+euro(c.price_morning)+'</b></span><span class="pchip">Tarde <b>'+euro(c.price_afternoon)+'</b><small>desde '+hm(c.cut_min)+'</small></span></div><p class="muted small" style="margin:6px 0 8px">Precio por jugador · partidos de 1 h 30.</p>';
+  var c=S.club,h=homeCard()+'<button class="clubbtn" data-act="clubs" aria-label="Ver clubes"><h2>'+esc(c.name)+' · '+esc(c.city)+'</h2><span class="clubchg">Cambiar</span></button><div class="pchips"><span class="pchip">Mañana <b>'+euro(c.price_morning)+'</b></span><span class="pchip">Tarde <b>'+euro(c.price_afternoon)+'</b><small>desde '+hm(c.cut_min)+'</small></span></div><p class="muted small" style="margin:6px 0 8px">Precio por jugador · partidos de 1 h 30. ¿Una hora ocupada? Tócala y te avisamos si se libera.</p>';
   h+=dayChips(S.day,'day');
   var occ={};S.occ.forEach(function(o){occ[o.court_id+'|'+o.start_min]=o;});
   var nFree=0,nOpen=0;S.courts.forEach(function(ct){slotList().forEach(function(m){if(isPast(S.day,m))return;var o=occ[ct.id+'|'+m];if(!o)nFree++;else if(o.is_open&&o.players<o.size)nOpen++;});});
@@ -946,7 +951,8 @@ function vReservar(){
       if(o){var mine=(S.mineIds||[]).indexOf(o.booking_id)>=0;
         if(mine)h+='<button class="slot mine" data-act="match" data-v="'+o.booking_id+'">'+hm(m)+'<small>'+(o.kind==='app'&&o.payment_state==='pending'?'Sin pagar':'Tuya')+'</small></button>';
         else if(o.is_open&&o.players<o.size&&!past)h+='<button class="slot open" data-act="match" data-v="'+o.booking_id+'">'+hm(m)+'<small>Abierto '+o.players+'/'+o.size+'</small></button>';
-        else h+='<div class="slot taken">'+hm(m)+'<small>Ocupada</small></div>';}
+        else if(past)h+='<div class="slot taken">'+hm(m)+'<small>Ocupada</small></div>';
+        else{var wk=(S.watch||{})[ct.id+'|'+m];h+='<button class="slot taken'+(wk?' watched':'')+'" data-act="watchSlot" data-court="'+ct.id+'" data-v="'+m+'" aria-label="'+hm(m)+' ocupada. '+(wk?'Te avisaremos si se libera. Toca para dejar de esperar.':'Toca para que te avisemos si se libera.')+'">'+hm(m)+'<small>'+(wk?'<svg class="bell" viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.4-1.8H9.6A2.5 2.5 0 0 0 12 22zm7-5.5-1.6-1.9V10a5.4 5.4 0 0 0-4.2-5.3V4a1.2 1.2 0 0 0-2.4 0v.7A5.4 5.4 0 0 0 6.6 10v4.6L5 16.5V18h14z"/></svg> Te aviso':'Ocupada')+'</small></button>';}}
       else if(past)h+='<div class="slot past">'+hm(m)+'<small>Pasada</small></div>';
       else h+='<button class="slot free" data-act="book" data-court="'+ct.id+'" data-v="'+m+'">'+hm(m)+'<small>Libre</small></button>';});
     if(!shown)h+='<p class="muted small slots-none">No quedan horas hoy en esta pista.</p>';
@@ -1376,6 +1382,13 @@ var A={
   retry:function(){curUid=undefined;start();},
   authMode:function(el){S.authMode=el.dataset.v;render();},
   tab:function(el){S.enter=true;S.tab=el.dataset.v;if(S.tab==='club'&&S.cobros)S.cobros.stale=true;S.sheet=null;stopPoll();render();refresh();window.scrollTo(0,0);},
+  watchSlot:async function(el){var c=el.dataset.court,m=+el.dataset.v,k=c+'|'+m,on=!(S.watch||{})[k];
+    if(on&&S.push==='off'){await pushOn();}
+    S.watch=S.watch||{};if(on)S.watch[k]=1;else delete S.watch[k];buzz();render();
+    var r=await sb.rpc('watch_slot',{p_court:c,p_day:S.day,p_start:m,p_on:on});
+    if(r.error){if(on)delete S.watch[k];else S.watch[k]=1;render();toast(String(r.error.message||'No se ha podido guardar').replace(/^.*?: /,''),true);return;}
+    if(!on){toast('Ya no te avisaremos de esa hora');return;}
+    toast(S.push==='on'?'Te avisaremos al móvil si se libera':S.push==='ios'?'Apuntado. Para recibir el aviso, instala Revo en tu iPhone (Compartir › Añadir a pantalla de inicio)':'Apuntado. Activa los avisos en tu perfil para recibirlo en el móvil');},
   day:function(el){S.enter=true;S.picked=true;S.fetching=true;S.day=el.dataset.v;buzz();render();refresh();},
   panelDay:function(el){S.enter=true;S.picked=true;buzz();S.panelDay=el.dataset.v;S.caja=null;render();refresh();},
   book:function(el){S.busy=false;S.sheet={type:'book',court:el.dataset.court,start:+el.dataset.v,open:false};renderSheet();},
@@ -1628,6 +1641,7 @@ async function setUser(u){var uid=(u&&u.id)||null;
   if(curUid!==uid)return;
   S.loading=false;render();
   var m=/^#p=([0-9a-f-]{36})$/.exec(location.hash);if(m){history.replaceState(null,'',location.pathname);openMatch(m[1]);}
+  goDayHash();
   var sp=new URLSearchParams(location.search),pg=sp.get('pago'),pb=sp.get('b'),stv=sp.get('stripe');
   /* Enlaces desde la web: ?d=AAAA-MM-DD&h=minutos abre esa hora para reservar; ?tab=partidos abre los partidos */
   var dl=sp.get('d'),dh=sp.get('h'),dt=sp.get('tab');
@@ -1672,6 +1686,9 @@ window.addEventListener('pageshow',function(e){var pb=null;try{pb=sessionStorage
   if(!e.persisted&&!pb)return;S.busy=false;
   if(S.user&&S.club){if(pb&&!/[?&]pago=/.test(location.search))releaseUnpaid(pb);else refresh();}
   else{if(pb&&!/[?&]pago=/.test(location.search))S.reopenPay=pb;render();}});
+function goDayHash(){var d=/^#d=(\d{4}-\d{2}-\d{2})$/.exec(location.hash);if(!d||!S.user||!S.club)return;history.replaceState(null,'',location.pathname);
+  S.day=d[1];S.picked=true;var b=document.querySelector('[data-act=tab][data-v=reservar]');if(b&&S.tab!=='reservar')b.click();else{S.tab='reservar';render();refresh();}}
+window.addEventListener('hashchange',goDayHash);
 window.addEventListener('hashchange',function(){var m=/^#p=([0-9a-f-]{36})$/.exec(location.hash);if(m&&S.user&&S.club){history.replaceState(null,'',location.pathname);openMatch(m[1]);}});
 /* Aviso para instalar la app (Android: botón; iPhone: pasos de Safari) */
 var deferredInstall=null,instHidden=false;
