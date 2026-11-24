@@ -37,8 +37,8 @@ Deno.serve(async (req) => {
   const fecha = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(day + "T12:00:00Z"));
   const hh = String(Math.floor(start_min / 60)).padStart(2, "0") + ":" + String(start_min % 60).padStart(2, "0");
   const msg = JSON.stringify({
-    title: "¡Se ha liberado la pista que querías!",
-    body: `${club?.name ?? ""} · ${court?.name ?? ""}\n${fecha}, ${hh}\nReserva rápido, que vuela.`,
+    title: "Pista libre",
+    body: `${court?.name ?? ""} · ${fecha}, ${hh}` + (club?.name ? `\n${club.name}` : ""),
     url: `${APP_URL}#d=${day}`,
   });
 
